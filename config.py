@@ -14,7 +14,7 @@ class Config:
     # Core Runtime
     # -------------------------------------------------------------------------
     # Budget
-    time_limit_sec: Optional[float] = 600
+    time_limit_sec: Optional[float] = 3000
     token_limit: Optional[int] = None
     depth_limit: Optional[int] = None
     node_limit: Optional[int] = None
@@ -173,6 +173,7 @@ class Config:
     cache_min_suffix_tokens: int = 50
     enable_sampling_buffer: bool = True
     enable_judging_buffer: bool = True
+    buffer_capacity: int = 10000
     enable_topk_optimization: bool = True
     # Top-K prefilter size used before Top-P (effective prefilter is max(prefilter, requested-k)).
     topk_prefilter_size: int = 512

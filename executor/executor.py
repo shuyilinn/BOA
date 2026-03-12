@@ -22,7 +22,6 @@ import time
 import os
 import json
 from typing import Optional, List, Dict, Any
-# TODO: Run judger and sampler with 2 GPUs + CPU in parallel.
 
 logger = setup_logger("Executor")
 
@@ -203,8 +202,8 @@ class Executor:
         judger_bs = self.judger.get_batch_size()
         self._sampler_batch_size = int(sampler_bs)
         self._judger_batch_size = int(judger_bs)
-        self.sample_buffer = Buffer(capacity=self._sampler_batch_size)
-        self.judging_buffer = Buffer(capacity=self._judger_batch_size)
+        self.sample_buffer = Buffer(capacity=self.config.buffer_capacity)
+        self.judging_buffer = Buffer(capacity=self.config.buffer_capacity)
         use_dynamic = self.config.use_dynamic_batch_size
         logger.info(
             "Batch size: use_dynamic=%s, sampler=%s, judger=%s",
@@ -213,7 +212,8 @@ class Executor:
             self._judger_batch_size,
         )
         logger.info(
-            "Buffers initialized: sample_buffer capacity=%s, judging_buffer capacity=%s",
+            "Buffers initialized: capacity=%s, flush_threshold: sample=%s judging=%s",
+            self.config.buffer_capacity,
             self._sampler_batch_size,
             self._judger_batch_size,
         )
@@ -251,8 +251,6 @@ class Executor:
             # Guard before starting any new step.
             if self._check_runtime_limits("loop_start"):
                 break
-            self._step_idx += 1
-            self._log_step_banner()
             # 1. Pick a node
             node = self.searcher.select_next_node()
 
@@ -272,9 +270,11 @@ class Executor:
                         return success_node
                     if self.runtime_guard.any_budget_reached():
                         break
-                    continue 
+                    continue
                 else:
                     break
+            self._step_idx += 1
+            self._log_step_banner()
             logger.info("Selected node: %s", self._node_brief(node))
 
 
@@ -285,11 +285,11 @@ class Executor:
             t_expand = time.monotonic()
             new_nodes = self.expander.expand(node)
             self._diag["expand_ms_total"] += (time.monotonic() - t_expand) * 1000.0
-            self._nodes_created += int(len(new_nodes))
+            self._nodes_created += len(new_nodes)
             if new_nodes:
                 self._max_depth_seen = max(
-                    int(self._max_depth_seen),
-                    max(int(getattr(child, "depth", 0) or 0) for child in new_nodes),
+                    self._max_depth_seen,
+                    max(getattr(child, "depth", 0) for child in new_nodes),
                 )
             if self._check_runtime_limits("post_expand"):
                 break
@@ -311,11 +311,11 @@ class Executor:
             self._mark_node_evaluated(node)
 
 
+            target_count = self.config.sampler_number
             for child in new_nodes:
-                if child.status == NodeStatus.CUT:
+                if child.status in (NodeStatus.CUT, NodeStatus.COMPLETED, NodeStatus.JAILBREAKED):
                     continue
                 # Process the cache
-                target_count = self.config.sampler_number
                 cached_children = []
                 if self._enable_sampling_cache:
                     path_ids = child.get_path_token_ids()
@@ -351,7 +351,7 @@ class Executor:
                         prompt_with_chat_template=self.prompt_with_chat_template,
                     )
                     self._diag["add_requests_ms_total"] += (time.monotonic() - t_add) * 1000.0
-                    self._sample_enqueued_items += int(needed_count)
+                    self._sample_enqueued_items += needed_count
                     self._sample_buffer_max_size = max(self._sample_buffer_max_size, len(self.sample_buffer))
                     logger.debug(
                         "Queued sample task in sample_buffer: %s missing_samples=%s cached_samples=%s sample_buffer_size=%s",
@@ -361,8 +361,7 @@ class Executor:
                         len(self.sample_buffer),
                     )
         
-                    # add returns whether the buffer becomes full (is_full)
-                    if self.sample_buffer.is_full():
+                    if len(self.sample_buffer) >= self._sampler_batch_size:
                         judge_result = self.process_buffer()
                         if judge_result is not None:
                             self._finalize_success(judge_result)
@@ -384,14 +383,7 @@ class Executor:
 
             # 5. Opportunistic flush of Judging Buffer
             # Avoid the case where Sample Buffer is not full but Judging Buffer has built up a lot.
-            if self.sample_buffer.is_full():
-                judge_result = self.process_buffer()
-                if judge_result is not None:
-                    self._finalize_success(judge_result)
-                    return judge_result
-                if self.runtime_guard.any_budget_reached():
-                    break
-            elif self.judging_buffer.is_full():
+            if len(self.judging_buffer) >= self._judger_batch_size:
                 judge_result = self.process_judging_only()
                 if judge_result is not None:
                     self._finalize_success(judge_result)
@@ -410,9 +402,8 @@ class Executor:
         t0 = time.monotonic()
 
         # --- Stage 1: Sample -> Judge ---
-        while not self.sample_buffer.is_empty():
-            if not self._consume_sample_once():
-                break
+        if not self.sample_buffer.is_empty():
+            self._consume_sample_once()
 
 
         # --- Stage 2: Judge -> Searcher ---
