@@ -128,20 +128,6 @@ class JudgeWorker:
         expand_results: List[Dict[str, Any]] = []
         generated_tokens_full_expand = 0
         if expand_tasks:
-            candidates = "; ".join(
-                f"{node_desc} score={score:.2f}" for node_desc, score in top_hits
-            )
-            logger.warning(
-                "!!! LAYER3 HIGH-SCORE CANDIDATES: %s/%s over threshold=%.2f. candidates=[%s] !!!",
-                len(expand_tasks),
-                len(tasks),
-                float(self.config.layer3_filter_threshold),
-                candidates,
-            )
-            logger.warning(
-                "!!! LAYER4 CHECK: sending %s task(s) to full-response judging !!!",
-                len(expand_tasks),
-            )
             expand_results, generated_tokens_full_expand = self._expanding_and_judging(expand_tasks)
 
         logger.info("Judging done: runtime_batch_size=%s", self._oom_runner.batch_size)

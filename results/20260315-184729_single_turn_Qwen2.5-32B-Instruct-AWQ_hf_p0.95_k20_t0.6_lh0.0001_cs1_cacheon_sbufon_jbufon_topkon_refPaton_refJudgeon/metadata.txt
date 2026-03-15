@@ -6,10 +6,10 @@ target_engine_name: hf
 - temperature: 0.6
 - top_p: 0.95
 - top_k: 20
-- likelihood: 1e-06
+- likelihood: 0.0001
 - sampler_number: 10
 - attack_sampler_number: 10
-- short_response_max_new_tokens: 150
+- short_response_max_new_tokens: 200
 - attack_sample_max_new_tokens: 512
 - full_response_max_new_tokens: 500
 
@@ -18,5 +18,5 @@ target_engine_name: hf
 - enable_sampling_buffer: True
 - enable_judging_buffer: True
 - enable_topk_optimization: True
-- enable_refuse_pattern_matching: False
-- enable_refuse_judger: False
+- enable_refuse_pattern_matching: True
+- enable_refuse_judger: True
