@@ -7,10 +7,12 @@
 
 # [Shuyi: NOTE: sampling will use the probability that after re-normalization, but in the tree, it will still store the probs that before re-normalization. why? I cannot remember the reason.]
 
+import time
 import torch
 from typing import List, Tuple, Optional
 from sampler.customized_sampler import CustomizedSampler
 from utils.logger import setup_logger
+from profiler import profile, maybe_torch_profile, get_torch_profile_dir
 
 logger = setup_logger("Sampler")
 
@@ -104,6 +106,7 @@ class Sampler:
         )
         return tokens
 
+    @profile("sampler.generate")
     def batch_uniform_generate_with_tau(
         self,
         batch_token_ids: List[List[int]],
@@ -120,6 +123,7 @@ class Sampler:
         - Tau is always accumulated from full-distribution log-prob provided by sampler.
         - Threshold prune / tau rollback are handled in this driver loop.
         """
+        
         if not batch_token_ids:
             if return_tau and return_invalid_flags:
                 return [], [], []
@@ -171,9 +175,14 @@ class Sampler:
         smoothing_steps = self.config.uniform_smoothing_steps
         _sf_full = self.config.uniform_smoothing_factor
 
-        with torch.no_grad():
+        _tprof_steps = int(getattr(self.config, "torch_profiler_steps", 0))
+        _tprof_dir = get_torch_profile_dir() if _tprof_steps > 0 else None
+
+        with torch.no_grad(), maybe_torch_profile(_tprof_dir, steps=_tprof_steps) as tprof:
             # Prefill (engine.forward_step returns [B, V] logits)
             logits, past_kv = self.engine.forward_step(input_ids, kv_cache=None, attention_mask=attention_mask)
+            if _tprof_steps > 0:
+                torch.cuda.synchronize()
             current_logits = logits
 
             for step in range(T):
@@ -185,11 +194,17 @@ class Sampler:
                         min_log_prob = float(threshold[step]) - tau_prev
 
                 sf = _sf_full if (smoothing_steps == 0 or step < smoothing_steps) else 0.0
+                _tp1 = time.perf_counter()
                 sample_res = self.cs.sample_step(
                     current_logits,
                     sf,
                     min_log_prob=min_log_prob,
                 )
+                _tp2 = time.perf_counter()
+                if step < 5:
+                    print(f"[timer] step={step} sample_step={(_tp2-_tp1)*1000:.1f}ms")
+                if tprof is not None:
+                    tprof.step()
                 next_tokens = sample_res["tokens"]
                 full_log_probs = sample_res["full_log_probs"]
                 has_valid_token = sample_res["has_valid_token"]
@@ -249,9 +264,18 @@ class Sampler:
                     next_tokens = next_tokens.index_select(0, active_rows)
                     active_orig = active_orig.index_select(0, active_rows)
                     past_kv = self._shrink_kv_cache(past_kv, active_rows)
-
+                _tp3 = time.perf_counter()
+                if step < 5:
+                    print(f"[timer] step={step} post_process={(_tp3-_tp2)*1000:.1f}ms")
                 # E) Incremental forward (batch may have shrunk)
+                _t0 = time.perf_counter()
                 logits, past_kv = self.engine.forward_step(next_tokens.unsqueeze(-1), kv_cache=past_kv)
+                _t1 = time.perf_counter()
+                if _tprof_steps > 0:
+                    torch.cuda.synchronize()
+                _t2 = time.perf_counter()
+                if _tprof_steps > 0 and step < 5:
+                    print(f"[timer] step={step} forward_launch={(_t1-_t0)*1000:.1f}ms  sync_wait={(_t2-_t1)*1000:.1f}ms  total={(_t2-_t0)*1000:.1f}ms")
                 current_logits = logits
 
         # Assemble List[List[int]], move to CPU once
@@ -288,6 +312,7 @@ class Sampler:
     def generate(self, token_ids: List[int]) -> List[int]:
         return self.engine.generate(token_ids)
 
+    @profile("sampler.prepare_inputs")
     def _prepare_inputs(self, batch_ids: List[List[int]]):
         B = len(batch_ids)
         max_len = max((len(x) for x in batch_ids), default=0)

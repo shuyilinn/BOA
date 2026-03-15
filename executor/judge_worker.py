@@ -10,6 +10,7 @@ from judgers.base_judger import PipelineJudger
 from sampler.sampler import Sampler
 from utils.batch_policy import RuntimeOOMBatchRunner
 from utils.logger import setup_logger
+from profiler import profile
 
 logger = setup_logger("JudgeWorker")
 
@@ -45,6 +46,7 @@ class JudgeWorker:
         self._oom_runner: RuntimeOOMBatchRunner | None = None
         self._expand_oom_runner: RuntimeOOMBatchRunner | None = None
 
+    @profile("judger.flush_once")
     def flush_once(
         self,
         judging_buffer: Buffer,

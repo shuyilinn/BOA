@@ -8,6 +8,7 @@ from components.buffer.buffer import Buffer, BufferItem
 from sampler.sampler import Sampler
 from utils.batch_policy import RuntimeOOMBatchRunner, get_initial_batch_size
 from utils.logger import setup_logger
+from profiler import profile
 
 logger = setup_logger("SampleWorker")
 
@@ -64,6 +65,7 @@ class SampleWorker:
             logger.info("Sampling batch policy initialized: initial_batch_size=%s", initial_bs)
         return self._oom_runner
 
+    @profile("sampler.flush_once")
     def flush_once(self, sample_buffer: Buffer, judging_buffer: Buffer) -> SampleBatchResult:
         oom_runner = self._ensure_oom_runner()
         runtime_batch_size = int(oom_runner.batch_size)

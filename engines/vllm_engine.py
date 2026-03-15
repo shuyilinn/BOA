@@ -2,6 +2,7 @@ import os
 import torch
 from typing import List, Union, Tuple, Optional, Any
 from engines.base_engine import TargetModelEngineBase
+from profiler import profile
 
 # [shuyi: this file has not been reviewed yet]
 class VllmTargetModelEngine(TargetModelEngineBase):
@@ -118,9 +119,10 @@ class VllmTargetModelEngine(TargetModelEngineBase):
 
         return torch.stack(logits_list)
 
+    @profile("sampler.engine.forward_step")
     def forward_step(
-        self, 
-        input_ids: torch.Tensor, 
+        self,
+        input_ids: torch.Tensor,
         kv_cache: Optional[List[List[int]]] = None,
         attention_mask: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, List[List[int]]]:

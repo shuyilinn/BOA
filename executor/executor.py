@@ -18,6 +18,7 @@ from executor.debug_view import node_brief, build_tree_snapshot
 from executor.runtime_guard import RuntimeGuard
 from executor.result_builder import build_final_stats
 from utils.batch_policy import RuntimeOOMBatchRunner
+from profiler import ProfileSession, set_session, clear_session, set_torch_profile_dir
 import time
 import os
 import json
@@ -139,6 +140,11 @@ class Executor:
     ):
         self.initialize_judger_components()
         self._step_idx = 0
+        run_id = getattr(self.reporter, "run_id", "run")
+        self.profile_session = ProfileSession(name=run_id, enabled=bool(getattr(self.config, "enable_profiling", True)))
+        set_session(self.profile_session)
+        if int(getattr(self.config, "torch_profiler_steps", 0)) > 0:
+            set_torch_profile_dir(self.reporter.result_dir)
         self._cache_lookups = 0
         self._cache_partial_hits = 0
         self._cache_full_hits = 0
@@ -836,9 +842,15 @@ class Executor:
             self.stats["tree_stats"]["queued"],
         )
 
-        # 2. Reporter writes files under reporter's result_dir with a unique run id
+        # 2. Save profiling data alongside other results
+        if hasattr(self, "profile_session"):
+            self.stats["profiling"] = self.profile_session.to_dict()
+            self.profile_session.save(self.reporter.result_dir)
+            clear_session()
+
+        # 3. Reporter writes files under reporter's result_dir with a unique run id
         self.reporter.generate_reports(
-            stats=self.stats, 
+            stats=self.stats,
             root_node=self.root,
         )
         cache_stats_data = self.stats.get("cache", {})

@@ -14,7 +14,7 @@ class Config:
     # Core Runtime
     # -------------------------------------------------------------------------
     # Budget
-    time_limit_sec: Optional[float] = 3000
+    time_limit_sec: Optional[float] = 100
     token_limit: Optional[int] = None
     depth_limit: Optional[int] = None
     node_limit: Optional[int] = None
@@ -23,6 +23,10 @@ class Config:
     random_seed: int = 2026
     deterministic_sampling: bool = True
     record_trace: bool = True
+
+    # Profiling
+    enable_profiling: bool = True
+    torch_profiler_steps: int = 3   # 0 = disabled; N = profile first N decode steps per generate call
 
     # Logging
     logger_mode: str = "warning"  # debug|info|warning|error

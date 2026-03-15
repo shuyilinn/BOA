@@ -32,6 +32,7 @@ class SweepConfig:
     use_dynamic_batch_size: bool = True
     chunk_size: int = 1
     chunk_width: int = 20
+    time_limit_sec: int = 60
     test_mode: bool = False
     use_mock_engines: bool = False
 
@@ -105,7 +106,7 @@ def _build_cmd(cfg: SweepConfig, root_dir: Path) -> List[str]:
         "--chunk_width",
         str(cfg.chunk_width),
         "--time_limit_sec",
-        "60",
+        str(cfg.time_limit_sec),
     ]
     if cfg.test_mode:
         command.extend(["--test_mode", "true"])

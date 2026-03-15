@@ -35,6 +35,7 @@ class SweepConfig:
     use_mock_engines: bool = False
     chunk_size: int = 1
     chunk_width: int = 100
+    time_limit_sec: int = 3000
 
 
 # Fixed GPU assignments
@@ -129,6 +130,8 @@ def _build_cmd(cfg: SweepConfig, root_dir: Path, task_name: str) -> List[str]:
         str(cfg.chunk_size),
         "--chunk_width",
         str(cfg.chunk_width),
+        "--time_limit_sec",
+        str(cfg.time_limit_sec),
         ]
     )
     if cfg.test_mode:

@@ -36,6 +36,7 @@ class SweepConfig:
     use_dynamic_batch_size: bool = True
     chunk_size: int = 1
     chunk_width: int = 100
+    time_limit_sec: int = 2
 
 
 # Demo uses mock engines only (minimum reproducibility, no model download required).
@@ -98,7 +99,7 @@ def _build_cmd(cfg: SweepConfig, root_dir: Path) -> List[str]:
         "--chunk_width",
         str(cfg.chunk_width),
         "--time_limit_sec",
-        "2",
+        str(cfg.time_limit_sec),
         "--mock_sampler_sleep_sec",
         "0",
         "--mock_judger_sleep_sec",

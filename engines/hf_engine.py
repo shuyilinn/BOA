@@ -22,6 +22,7 @@ _ensure_awq_transformers_compat()
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from engines.base_engine import TargetModelEngineBase
+from profiler import profile
 # [shuyi: this file has not been reviewed yet]
 
 class HuggingFaceTargetModelEngine(TargetModelEngineBase):
@@ -114,9 +115,10 @@ class HuggingFaceTargetModelEngine(TargetModelEngineBase):
         # return shape: [batch_size, vocab_size]
         return outputs.logits[:, -1, :]
 
+    @profile("sampler.engine.forward_step")
     def forward_step(
-        self, 
-        input_ids: torch.Tensor, 
+        self,
+        input_ids: torch.Tensor,
         kv_cache: Optional[Any] = None,
         attention_mask: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, Any]:
