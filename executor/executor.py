@@ -396,7 +396,8 @@ class Executor:
                     return judge_result
                 if self.runtime_guard.any_budget_reached():
                     break
-            self._log_tree_snapshot()
+            if self._step_idx % 10 == 0:
+                self._log_tree_snapshot()
         # Here means no unsafe
         self.success_callback(None, None, exit_reason=None)
 
@@ -895,6 +896,7 @@ class Executor:
         tokenizer = self.sampler.tokenizer
         model_name = self.config.target_model or ""
         original_prompt = prompt
+        
 
         tools = None
         chat = None
@@ -925,6 +927,12 @@ class Executor:
                     prompt_with_chat_template = tokenizer.apply_chat_template(
                         chat, tools=tools, tokenize=False, add_generation_prompt=True
                     )
+                # assistant_prefill_ids = [
+                #     198, 40, 4157, 1855, 264, 707,309
+                # ]
+                # prompt_with_chat_template_ids = tokenizer.encode(prompt_with_chat_template) + assistant_prefill_ids
+                # prompt_with_chat_template = prompt_with_chat_template + tokenizer.decode(assistant_prefill_ids)
+                # return prompt_with_chat_template, prompt_with_chat_template_ids
                 logger.info(f"Prompt with chat template: {prompt_with_chat_template}")
                 return prompt_with_chat_template, tokenizer.encode(prompt_with_chat_template)
             else:

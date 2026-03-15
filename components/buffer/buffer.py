@@ -32,6 +32,7 @@ class BufferItem:
     node: Any
     path_text: str
     path_ids: List[int]
+    base_generated_len: int = 0
     judger_prompt: Optional[str] = None
     judger_metadata: Dict[str, Any] | None = None
     original_prompt: Optional[str] = None
@@ -68,12 +69,14 @@ class Buffer:
         # Path context is identical for all requests of the same node.
         path_text = node.get_path_text()
         path_ids = node.get_path_token_ids()
+        base_generated_len = max(0, len(path_ids) - int(node.prompt_len))
         with self._lock:
             for _ in range(to_add):
                 item = BufferItem(
                     node=node,
                     path_text=path_text,
                     path_ids=path_ids,
+                    base_generated_len=base_generated_len,
                     judger_prompt=judger_prompt,
                     judger_metadata=dict(judger_metadata or {}),
                     original_prompt=original_prompt,

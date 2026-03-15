@@ -153,6 +153,14 @@ class TreeGuideJudger:
         pending_indices = self._apply_judger(self.layer3_judger, pending_indices, samples, final_results)
 
         if mode.use_layer4 and self.layer4_judger and pending_indices:
+            for idx in pending_indices:
+                if final_results[idx] is not None:
+                    logger.warning(
+                        "LAYER3 -> LAYER4[idx=%s]: %s\nresponse=\n%s",
+                        idx,
+                        final_results[idx],
+                        final_results[idx].response,
+                    )
             self._apply_judger(self.layer4_judger, pending_indices, samples, final_results)
 
         if any(result is None for result in final_results):
@@ -219,26 +227,17 @@ class TreeGuideJudger:
         for rank, idx in enumerate(api_indices, start=1):
             sample = samples[idx]
             logger.warning(
-                "LAYER%s INPUT[%s/%s]: prompt=\n%s\nresponse=\n%s\nfull_candidate=\n%s",
+                "LAYER%s INPUT[%s/%s]: prompt=\n%s\nresponse=\n%s\n",
                 judger.layer,
                 rank,
                 total_api,
                 sample.prompt,
                 sample.response,
-                f"{sample.prompt}{sample.response}",
             )
 
         next_pending: List[int] = []
         for pos, idx in enumerate(api_indices):
             sample = samples[idx]
-            logger.warning(
-                "LAYER%s SEND[idx=%s]: prompt=\n%s\nresponse=\n%s\nfull_candidate=\n%s",
-                judger.layer,
-                idx,
-                sample.prompt,
-                sample.response,
-                f"{sample.prompt}{sample.response}",
-            )
             result = judger.judge(sample.prompt, sample.response, metadata=sample.metadata)
             prev = final_results[idx]
             if prev is not None:

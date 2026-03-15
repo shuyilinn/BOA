@@ -25,8 +25,8 @@ class Config:
     record_trace: bool = True
 
     # Profiling
-    enable_profiling: bool = True
-    torch_profiler_steps: int = 3   # 0 = disabled; N = profile first N decode steps per generate call
+    enable_profiling: bool = False
+    torch_profiler_steps: int = 0   # 0 = disabled; N = profile first N decode steps per generate call
 
     # Logging
     logger_mode: str = "warning"  # debug|info|warning|error
@@ -118,7 +118,7 @@ class Config:
     max_batch_size: int = 4096
 
     # Sampling lengths / counts (tree search)
-    sample_new_tokens: int = 150
+    sample_new_tokens: int = 200
     sample_full_new_tokens: int = 500
     sampler_number: int = 10
 

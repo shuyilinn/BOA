@@ -83,6 +83,7 @@ class Sampler:
         self,
         batch_token_ids: List[List[int]],
         *,
+        base_generated_lens: Optional[List[int]] = None,
         max_new_tokens: Optional[int] = None,
         return_invalid_flags: bool = False,
     ):
@@ -91,6 +92,7 @@ class Sampler:
         if return_invalid_flags:
             tokens, invalid_flags = self.batch_uniform_generate_with_tau(
                 batch_token_ids,
+                base_generated_lens=base_generated_lens,
                 return_tau=False,
                 compute_tau=tau_gate_enabled,
                 max_new_tokens=max_new_tokens,
@@ -99,6 +101,7 @@ class Sampler:
             return tokens, invalid_flags
         tokens = self.batch_uniform_generate_with_tau(
             batch_token_ids,
+            base_generated_lens=base_generated_lens,
             return_tau=False,
             compute_tau=tau_gate_enabled,
             max_new_tokens=max_new_tokens,
@@ -111,6 +114,7 @@ class Sampler:
         self,
         batch_token_ids: List[List[int]],
         *,
+        base_generated_lens: Optional[List[int]] = None,
         return_tau: bool = True,
         compute_tau: bool = True,
         max_new_tokens: Optional[int] = None,
@@ -175,6 +179,15 @@ class Sampler:
         smoothing_steps = self.config.uniform_smoothing_steps
         _sf_full = self.config.uniform_smoothing_factor
 
+        # Per-row base offset for smoothing cutoff (in original batch coordinate system).
+        # If not provided, defaults to all zeros (treat each sequence as starting from token 0).
+        if base_generated_lens is not None:
+            _base_lens = torch.tensor(base_generated_lens, device=device, dtype=torch.long)
+        else:
+            _base_lens = torch.zeros(B, device=device, dtype=torch.long)
+        # Once all active sequences pass their smoothing window, skip per-row sf computation.
+        _smoothing_all_done = not (smoothing_steps > 0 and _sf_full > 0)
+
         _tprof_steps = int(getattr(self.config, "torch_profiler_steps", 0))
         _tprof_dir = get_torch_profile_dir() if _tprof_steps > 0 else None
 
@@ -193,7 +206,20 @@ class Sampler:
                     if threshold is not None and step < len(threshold):
                         min_log_prob = float(threshold[step]) - tau_prev
 
-                sf = _sf_full if (smoothing_steps == 0 or step < smoothing_steps) else 0.0
+                # Per-row smoothing: compute effective step for each active sequence.
+                # effective_step[i] = base_generated_len[orig_i] + local_step
+                if _smoothing_all_done:
+                    sf = 0.0
+                elif smoothing_steps == 0 or _sf_full <= 0:
+                    sf = _sf_full
+                else:
+                    active_base_lens = _base_lens.index_select(0, active_orig)  # [B_active]
+                    still_smoothing = (active_base_lens + step) < smoothing_steps  # [B_active] bool
+                    if still_smoothing.any().item():
+                        sf = torch.where(still_smoothing, _sf_full, 0.0).unsqueeze(1)  # [B_active, 1]
+                    else:
+                        sf = 0.0
+                        _smoothing_all_done = True  # skip per-row computation for all future steps
                 _tp1 = time.perf_counter()
                 sample_res = self.cs.sample_step(
                     current_logits,

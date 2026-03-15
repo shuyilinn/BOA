@@ -27,19 +27,20 @@ class CustomizedSampler:
 
     @profile("sampler.apply_smoothing")
     def apply_smoothing(self,
-                        probs_subset: torch.Tensor, 
-                        smoothing_factor: float) -> torch.Tensor:
+                        probs_subset: torch.Tensor,
+                        smoothing_factor) -> torch.Tensor:
         """
         Uniform smoothing on candidate subset: (1 - alpha) * P_orig + alpha * P_uniform.
+        smoothing_factor can be a float scalar or a [B, 1] tensor for per-row smoothing.
         """
-        if smoothing_factor <= 0:
+        if isinstance(smoothing_factor, (int, float)) and smoothing_factor <= 0:
             return probs_subset
 
         # Spread smoothing only over nonzero slots
         nonzero_mask = (probs_subset > 0)
         nonzero_cnt = nonzero_mask.sum(dim=-1, keepdim=True).clamp_min(1)
         uniform_dist = nonzero_mask.float() / nonzero_cnt
-        
+
         smoothed_probs = (1 - smoothing_factor) * probs_subset + smoothing_factor * uniform_dist
         return smoothed_probs / smoothed_probs.sum(dim=-1, keepdim=True).clamp_min(self.eps)
 
@@ -166,7 +167,13 @@ class CustomizedSampler:
                 log_denom=scaled_log_denom_valid,
             )
             # 4) Smooth over already tau-legal + top-p/top-k candidate subset.
-            probs_final = self.apply_smoothing(probs_subset, smoothing_factor)
+            # If smoothing_factor is a per-row tensor [B_active, 1], index it down to [B_valid, 1].
+            sf_for_valid = (
+                smoothing_factor.index_select(0, valid_rows)
+                if isinstance(smoothing_factor, torch.Tensor)
+                else smoothing_factor
+            )
+            probs_final = self.apply_smoothing(probs_subset, sf_for_valid)
 
         # 5) Sample
         next_tokens = torch.zeros(

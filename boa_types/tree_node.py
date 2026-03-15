@@ -68,7 +68,7 @@ class TreeNode:
     # Cumulative log-probability from root to this node path.
     cum_log_prob: float = 0.0
     # Aggregated node score (mean of `scores`) used for search priority.
-    score: float = 0.0
+    score: float = -1
     
     # ------------------------------------------------------------------
     # 4) Lifecycle / Control Flags

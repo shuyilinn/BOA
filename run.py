@@ -12,6 +12,8 @@ from utils.run_naming import build_log_file_path, build_run_id
 
 def main():
     cfg = resolve_config()
+    import torch
+    torch.cuda.set_device(cfg.target_model_cuda_number)
     run_id = build_run_id(cfg)
     setattr(cfg, "run_id", run_id)
     log_file = build_log_file_path(cfg, run_id=run_id)

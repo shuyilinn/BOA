@@ -93,6 +93,7 @@ class SampleWorker:
         def _run_chunk(chunk_tasks: List[BufferItem]) -> None:
             nonlocal generated_tokens, pushed, requeued
             sample_tasks_ids = [task.path_ids for task in chunk_tasks]
+            sample_base_lens = [task.base_generated_len for task in chunk_tasks]
             logger.info(
                 "Sampling chunk: tasks=%s (chunk_size=%s)",
                 len(chunk_tasks),
@@ -100,6 +101,7 @@ class SampleWorker:
             )
             new_children_groups, tau_invalid_flags = self.sampler.batch_uniform_generate(
                 sample_tasks_ids,
+                base_generated_lens=sample_base_lens,
                 return_invalid_flags=True,
             )
             generated_tokens += int(sum(len(new_children) for new_children in new_children_groups))
