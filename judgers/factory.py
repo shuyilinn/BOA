@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, Tuple
 
 from judgers.atomic.agent_safety_judger import AgentSafetyJudger
 from judgers.atomic.api_nuanced_judger import ApiNuancedJudger
-from judgers.atomic.nuanced_judger import BoaJudger
+from judgers.atomic.boajudger import BoaJudger
 from judgers.atomic.refusal_judger import RefusalJudger
 from judgers.atomic.refusal_state_machine import RefusalPatternJudger
 from judgers.base_judger import PipelineJudger

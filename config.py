@@ -14,7 +14,7 @@ class Config:
     # Core Runtime
     # -------------------------------------------------------------------------
     # Budget
-    time_limit_sec: Optional[float] = 600
+    time_limit_sec: Optional[float] = 100
     token_limit: Optional[int] = None
     depth_limit: Optional[int] = None
     node_limit: Optional[int] = None
@@ -23,6 +23,10 @@ class Config:
     random_seed: int = 2026
     deterministic_sampling: bool = True
     record_trace: bool = True
+
+    # Profiling
+    enable_profiling: bool = False
+    torch_profiler_steps: int = 0   # 0 = disabled; N = profile first N decode steps per generate call
 
     # Logging
     logger_mode: str = "warning"  # debug|info|warning|error
@@ -114,7 +118,7 @@ class Config:
     max_batch_size: int = 4096
 
     # Sampling lengths / counts (tree search)
-    sample_new_tokens: int = 150
+    sample_new_tokens: int = 200
     sample_full_new_tokens: int = 500
     sampler_number: int = 10
 
@@ -174,6 +178,7 @@ class Config:
     cache_min_suffix_tokens: int = 50
     enable_sampling_buffer: bool = True
     enable_judging_buffer: bool = True
+    buffer_capacity: int = 10000
     enable_topk_optimization: bool = True
     # Top-K prefilter size used before Top-P (effective prefilter is max(prefilter, requested-k)).
     topk_prefilter_size: int = 512

@@ -153,6 +153,9 @@ class TreeGuideJudger:
         pending_indices = self._apply_judger(self.layer3_judger, pending_indices, samples, final_results)
 
         if mode.use_layer4 and self.layer4_judger and pending_indices:
+            for idx in pending_indices:
+                if final_results[idx] is not None:
+                    self._log_atomic_result(final_results[idx], idx, passed_to_layer4=True)
             self._apply_judger(self.layer4_judger, pending_indices, samples, final_results)
 
         if any(result is None for result in final_results):
@@ -219,26 +222,17 @@ class TreeGuideJudger:
         for rank, idx in enumerate(api_indices, start=1):
             sample = samples[idx]
             logger.warning(
-                "LAYER%s INPUT[%s/%s]: prompt=\n%s\nresponse=\n%s\nfull_candidate=\n%s",
+                "LAYER%s INPUT[%s/%s]: prompt=\n%s\nresponse=\n%s\n",
                 judger.layer,
                 rank,
                 total_api,
                 sample.prompt,
                 sample.response,
-                f"{sample.prompt}{sample.response}",
             )
 
         next_pending: List[int] = []
         for pos, idx in enumerate(api_indices):
             sample = samples[idx]
-            logger.warning(
-                "LAYER%s SEND[idx=%s]: prompt=\n%s\nresponse=\n%s\nfull_candidate=\n%s",
-                judger.layer,
-                idx,
-                sample.prompt,
-                sample.response,
-                f"{sample.prompt}{sample.response}",
-            )
             result = judger.judge(sample.prompt, sample.response, metadata=sample.metadata)
             prev = final_results[idx]
             if prev is not None:
@@ -271,23 +265,30 @@ class TreeGuideJudger:
                 break
         return next_pending
 
-    def _log_atomic_result(self, result: AtomicJudgerResult, idx: int) -> None:
-        logger.info(
-            "LAYER%s RESULT[idx=%s]: action=%s is_safe=%s score=%s response=\n%s",
+    def _log_atomic_result(self, result: AtomicJudgerResult, idx: int, passed_to_layer4: bool = False) -> None:
+        if passed_to_layer4 and result.layer == 3:
+            logger.warning(
+                "!!! PASSED LAYER3 RESULT[idx=%s]: status=%s is_safe=%s score=%s\nmodel_response=\n%s\njudger_response=\n%s !!!",
+                idx,
+                result.action.value,
+                bool(result.is_safe),
+                float(result.score),
+                result.response if result.response else "NULL",
+                result.raw_output if result.raw_output else "NULL",
+            )
+            return
+
+        log_fn = logger.warning if result.layer == 4 else logger.info
+        log_fn(
+            "!!! LAYER%s RESULT[idx=%s]: status=%s is_safe=%s score=%s\nmodel_response=\n%s\njudger_response=\n%s !!!",
             result.layer,
             idx,
             result.action.value,
             bool(result.is_safe),
             float(result.score),
-            result.response,
+            result.response if result.response else "NULL",
+            result.raw_output if result.raw_output else "NULL",
         )
-        if result.raw_output:
-            logger.info(
-                "LAYER%s FEEDBACK[idx=%s]:\n%s",
-                result.layer,
-                idx,
-                result.raw_output,
-            )
 
     def _clean_response(self, response: str) -> str:
         if not response:
