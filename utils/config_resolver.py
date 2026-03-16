@@ -70,6 +70,7 @@ def resolve_config() -> Config:
     parser.add_argument("--sample_new_tokens", type=int, default=None)
     parser.add_argument("--sample_full_new_tokens", type=int, default=None)
     parser.add_argument("--sampler_number", type=int, default=None)
+    parser.add_argument("--enable_attack_sampling", type=_parse_bool, default=None)
     parser.add_argument("--temperature", type=float, default=None)
     parser.add_argument("--top_p", type=float, default=None)
     parser.add_argument("--top_k", type=int, default=None)
@@ -183,6 +184,7 @@ def resolve_config() -> Config:
         "sample_new_tokens",
         "sample_full_new_tokens",
         "sampler_number",
+        "enable_attack_sampling",
         "temperature",
         "top_p",
         "top_k",

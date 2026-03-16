@@ -125,6 +125,8 @@ def main():
             "tools_openai": sample.get("tools_openai", []),
             "fulfillable": sample.get("fulfillable"),
         }
+        if "dialog" in sample:
+            prompt_metadata["dialog"] = sample["dialog"]
         logger.info(f"Start running prompt: {harmful_prompt}")
         executor.run(
             harmful_prompt,

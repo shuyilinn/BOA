@@ -28,11 +28,13 @@ class L1Expander:
                 assistant_node.metadata["should_complete"] = True
             return assistant_node
 
+        tokenizer = self.engine.get_tokenizer()
         current_node = assistant_node
         for sequence in feedback_bundle.sequences:
+            token_ids = sequence.token_ids or tokenizer.encode(sequence.text)
             role = sequence.role or self._role_from_source(sequence.source)
             child = current_node.add_child(
-                token_ids=sequence.token_ids,
+                token_ids=token_ids,
                 text=sequence.text,
                 log_prob=float(sequence.log_prob),
                 interaction_role=role,

@@ -25,7 +25,14 @@ class L2Expander:
         self.l3_handler = L3Expander(engine, config, threshold=threshold)
         self.l1_expander = L1Expander(engine, config)
         self.tokenizer = engine.get_tokenizer()
-        self._eos_token_id = getattr(self.tokenizer, "eos_token_id", None)
+        self._eos_token_ids: set[int] = {int(self.tokenizer.eos_token_id)}
+        model = getattr(engine, "model", None)
+        if model is not None:
+            generation_eos = model.generation_config.eos_token_id
+            if isinstance(generation_eos, int):
+                self._eos_token_ids.add(generation_eos)
+            else:
+                self._eos_token_ids.update(int(t) for t in generation_eos)
 
     def expand(self, node: TreeNode) -> List[TreeNode]:
         """
@@ -50,9 +57,9 @@ class L2Expander:
         for chunk, chunk_text in zip(candidate_chunks, chunk_texts):
             chunk_ids = chunk["ids"]
             ends_with_eos = bool(
-                self._eos_token_id is not None
+                self._eos_token_ids
                 and chunk_ids
-                and int(chunk_ids[-1]) == int(self._eos_token_id)
+                and int(chunk_ids[-1]) in self._eos_token_ids
             )
             child = node.add_child(
                 token_ids=chunk_ids,

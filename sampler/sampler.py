@@ -25,10 +25,8 @@ class Sampler:
         self.stop_token_ids = self._resolve_stop_token_ids()
         self._stop_lookup: Optional[torch.Tensor] = None
         logger.info(
-            "Sampler stop config: stop_token_ids=%s tokenizer_eos_token_id=%s eos_token=%r",
+            "Sampler stop config: stop_token_ids=%s",
             self.stop_token_ids,
-            self.tokenizer.eos_token_id,
-            getattr(self.tokenizer, "eos_token", None),
         )
 
     def _resolve_stop_token_ids(self) -> List[int]:

@@ -17,12 +17,11 @@ class NodeStatus(Enum):
 
 class NodeSource(Enum):
     """Node source."""
+    ROOT = "root"
     ASSISTANT = "assistant"
     USER = "user"
     TOOL = "tool"
     ENV = "env"
-    # Backward-compatible alias.
-    LLM = "assistant"
 
 
 @dataclass
@@ -91,6 +90,10 @@ class TreeNode:
     # Raw per-sample judger scores before aggregation to `score`.
     scores: List[float] = field(default_factory=list)
 
+    # Prompt-level context shared across all nodes in a path (e.g. environments, tools).
+    # Set once on the root node; all descendants inherit it automatically via __post_init__.
+    prompt_metadata: Dict[str, Any] = field(default_factory=dict)
+
     def __post_init__(self):
         """Post-init derived field computation."""
         # 1. Compute depth automatically
@@ -98,6 +101,7 @@ class TreeNode:
             self.depth = self.parent.depth + 1
             self.prompt_len = self.parent.prompt_len
             self.environment_type = self.parent.environment_type
+            self.prompt_metadata = self.parent.prompt_metadata
             # 2. Accumulate probability automatically (if cum_log_prob is not provided)
             if self.cum_log_prob == 0.0:
                 self.cum_log_prob = self.parent.cum_log_prob + self.log_prob
@@ -154,6 +158,30 @@ class TreeNode:
                 texts.append(node.text)
             node = node.parent
         return "".join(reversed(texts))
+
+    def get_path_output_messages(self) -> List[Dict[str, Any]]:
+        """
+        [Backtrace] Reconstruct structured output messages from TOOL nodes along the path.
+
+        Mirrors the messages list built by eval.py lines 267-268: for each tool
+        interaction in the path, collect the stored (assistant tool_calls + tool result)
+        message pair.  The caller is responsible for appending the final assistant
+        text response (if any).
+        """
+        path: List['TreeNode'] = []
+        node: Optional['TreeNode'] = self
+        while node is not None:
+            path.append(node)
+            node = node.parent
+        path.reverse()
+
+        messages: List[Dict[str, Any]] = []
+        for n in path:
+            if n.source == NodeSource.TOOL:
+                msgs = n.metadata.get("structured_messages")
+                if isinstance(msgs, list):
+                    messages.extend(msgs)
+        return messages
 
     def mark_as_jailbreak(self):
         """Mark current node as jailbreak hit and annotate ancestor jailbreak path."""

@@ -47,9 +47,9 @@ class Config:
             },
             "agent": {
                 "benchmark_path": "./benchmark/agentsafetybench/released_data.json",
-                "environment_type": "single_turn",
+                "environment_type": "agent_safetybench",
                 "clean_response": False,
-                "terminal_unsafe_enabled": True,
+                "terminal_unsafe_enabled": False,
                 "terminal_unsafe_layers": [3],
                 "judger_profile": "agent_safety",
                 "judger_model": "thu-coai/ShieldAgent",
@@ -106,7 +106,7 @@ class Config:
 
     # Sampler batching
     use_dynamic_batch_size: bool = True
-    sampler_batch_size: int = 100
+    sampler_batch_size: int = 18
     sampler_estimate_prompt_len: int = 512
     expander_batch_size: int = 100
     hf_batch_estimate_overhead: float = 1
@@ -119,6 +119,7 @@ class Config:
     sampler_number: int = 10
 
     # Attack sampling (separate from tree-search sampling)
+    enable_attack_sampling: bool = True
     attack_sample_new_tokens: int = 512
     attack_sampler_number: int = 10
 

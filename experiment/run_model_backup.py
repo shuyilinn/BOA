@@ -38,8 +38,8 @@ class SweepConfig:
 
 
 # Fixed GPU assignments
-TARGET_MODEL_CUDA_NUMBER = 2
-JUDGER_CUDA_NUMBER = 2
+TARGET_MODEL_CUDA_NUMBER = 1
+JUDGER_CUDA_NUMBER = 1
 TARGET_ENGINE_NAME = "hf"
 JUDGER_ENGINE_NAME = "vllm"
 
@@ -57,7 +57,7 @@ MODEL_CONFIGS: List[SweepConfig] = [
     # SweepConfig("single_turn", "Qwen/Qwen2.5-72B-Instruct-AWQ", 0.95, 20, 0.6, 0.0001, 1, 128, logger_mode="warning", use_dynamic_batch_size=True),
     # SweepConfig("single_turn", "hugging-quants/Meta-Llama-3.1-8B-Instruct-AWQ-INT4", 0.9, -1, 0.6, 0.0001, 1, 128, logger_mode="warning", use_dynamic_batch_size=True, chunk_size=1, chunk_width=20),
     # SweepConfig("single_turn", "Qwen/Qwen2.5-32B-Instruct-AWQ", 0.95, 20, 0.6, 0.0001, 1, 128, logger_mode="warning", use_dynamic_batch_size=True),
-    SweepConfig("single_turn", "meta-llama/Llama-3.1-8B-Instruct", 0.9, -1, 0.6, 0.0001, 1, -1, logger_mode="warning", use_dynamic_batch_size=True, chunk_size=1, chunk_width=20),
+    SweepConfig("agent", "meta-llama/Llama-3.1-8B-Instruct", 0.9, -1, 0.6, 0.0001, 11, 14, logger_mode="info", use_dynamic_batch_size=False, chunk_size=1, chunk_width=20),
     # SweepConfig("single_turn", "meta-llama/Llama-3.1-8B-Instruct", 0.9, -1, 0.6, 0.0001, 1, 128, logger_mode="warning", use_dynamic_batch_size=True, chunk_size=5, chunk_width=20),
     # SweepConfig("single_turn", "Qwen/Qwen3-8B", 0.95, 20, 0.6, 0.0001, 1, 1, logger_mode="warning", use_dynamic_batch_size=True),
     # SweepConfig("single_turn", "Qwen/Qwen3-8B", 0.95, 20, 0.6, 0.0001, 1, 1, logger_mode="warning", use_dynamic_batch_size=True, test_mode=True, use_mock_engines=True),

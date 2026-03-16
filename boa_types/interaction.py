@@ -17,7 +17,7 @@ META_AWAITING_ENVIRONMENT = "awaiting_environment"
 class EnvironmentFeedback:
     source: NodeSource
     text: str
-    token_ids: List[int]
+    token_ids: List[int] = field(default_factory=list)
     role: Optional[str] = None
     log_prob: float = 0.0
     metadata: Dict[str, Any] = field(default_factory=dict)

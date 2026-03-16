@@ -1,7 +1,7 @@
 from config import Config
 from utils.logger import setup_logger
 
-from boa_types.tree_node import TreeNode, NodeStatus
+from boa_types.tree_node import TreeNode, NodeStatus, NodeSource
 from searchers.naive_searcher import NaiveSearcher
 from sampler.l2_expander import L2Expander
 from sampler.sampler import Sampler
@@ -232,7 +232,9 @@ class Executor:
             cum_log_prob=0.0,
             depth=0,
             status=NodeStatus.CREATED,
+            source=NodeSource.ROOT,
             environment_type=self.config.workload_configs[self.config.workload_name]["environment_type"],
+            prompt_metadata=dict(self.prompt_metadata),
         )
         self.root = root
         self._nodes_created = 1
@@ -240,7 +242,11 @@ class Executor:
         self.searcher.add_node(root)
         logger.info("Root queued: %s", self._node_brief(root))
         # --- Phase 1: Attack sampling (optional) ---
-        sampler_result = self.attack_sampling(root)
+        if not self.config.enable_attack_sampling:
+            logger.info("Attack sampling disabled (enable_attack_sampling=False).")
+            sampler_result = None
+        else:
+            sampler_result = self.attack_sampling(root)
         logger.info("Sampler result: %s", sampler_result)
         if sampler_result is not None:
             self._finalize_success(sampler_result)
