@@ -108,13 +108,12 @@ class Reporter:
             cum_log_prob = getattr(cur, "cum_log_prob", None)
             score = getattr(cur, "score", None)
             node_depth = getattr(cur, "depth", None)
-            source = getattr(getattr(cur, "source", None), "value", getattr(cur, "source", None))
-            role = metadata.get("interaction_role") or metadata.get("role")
+            role = cur.role.value
 
             log_prob_str = f"{log_prob:.2f}" if isinstance(log_prob, (int, float)) else str(log_prob)
             lines.append(
                 f"{cur_indent}- [{status}]{hit_tag}{path_tag} {repr(text)} "
-                f"(ID: {token_id}), DEPTH: {node_depth}, SOURCE: {source}, ROLE: {role}, "
+                f"(ID: {token_id}), DEPTH: {node_depth}, ROLE: {role}, "
                 f"LOGP: {log_prob_str}, CUM_LOGP: {cum_log_prob}, SCORE: {score}\n"
             )
 
@@ -138,12 +137,14 @@ class Reporter:
                 "token_ids": getattr(n, "token_ids", None),
                 "depth": getattr(n, "depth", None),
                 "status": getattr(getattr(n, "status", None), "value", getattr(n, "status", None)),
-                "source": getattr(getattr(n, "source", None), "value", getattr(n, "source", None)),
-                "role": (getattr(n, "metadata", {}) or {}).get("interaction_role"),
+                "role": n.role.value,
                 "score": getattr(n, "score", None),
+                "selection_score": getattr(n, "selection_score", None),
+                "scores": getattr(n, "scores", None) or [],
                 "log_prob": getattr(n, "log_prob", None),
                 "cum_log_prob": getattr(n, "cum_log_prob", None),
                 "child_ids": [],
+                "metadata": getattr(n, "metadata", None) or {},
             }
 
         root_id = id(node)
@@ -185,10 +186,10 @@ class Reporter:
             print(
                 "Tree stats (persist): total=%s max_depth=%s evaluated=%s queued=%s"
                 % (
-                    tree_stats.get("total", "N/A"),
-                    tree_stats.get("max_depth", "N/A"),
-                    tree_stats.get("evaluated", "N/A"),
-                    tree_stats.get("queued", "N/A"),
+                    tree_stats.get("total"),
+                    tree_stats.get("max_depth"),
+                    tree_stats.get("evaluated"),
+                    tree_stats.get("queued"),
                 )
             )
         run_entry = {
@@ -209,27 +210,18 @@ class Reporter:
         fulfillable = prompt_metadata.get("fulfillable")
         prompt_str = stats.get("prompt") or original_prompt_str
         final_out = stats.get("final_output") or "N/A"
-        jailbreak = stats.get("jailbreak_found", False)
+        jailbreak = stats["jailbreak_found"]
         # Compatibility baseline score: only from persisted stats; do not mix in root_node.score.
         # Older runs may only have a single `score` without split layer scores.
-        legacy_score = stats.get("score")
-        if legacy_score is None:
-            legacy_score = 0
         layer3_score = stats.get("layer3_score")
         layer4_score = stats.get("layer4_score")
-        if layer3_score is None and layer4_score is None:
-            # Backward compatibility for old runs where only one score exists.
-            if jailbreak:
-                layer4_score = legacy_score
-            else:
-                layer3_score = legacy_score
         duration = stats.get("duration")
         elapsed = f"{duration:.2f}s" if isinstance(duration, (int, float)) else str(duration)
         tok = stats.get("total_tokens_generated")
         tok_str = tok if tok is not None else "N/A"
         tok_sources = stats.get("token_sources", {}) or {}
-        evaluated_nodes_count = int(stats.get("evaluated_nodes_count", 0) or 0)
-        max_evaluated_depth = int(stats.get("max_evaluated_depth", -1) or -1)
+        evaluated_nodes_count = stats.get("evaluated_nodes_count")
+        max_evaluated_depth = stats.get("max_evaluated_depth")
         prob = stats.get("probability")
         log_prob = stats.get("log_probability")
         if isinstance(prob, (int, float)):
@@ -272,7 +264,9 @@ class Reporter:
         block.append(f"Layer4 score: {layer4_score}")
         block.append(f"Safe: {safe_str}")
         block.append(f"Exit reason: {exit_reason}")
-        block.append(f"Log probability: {log_prob_str}")
+        block.append(f"Log probability (full seq): {log_prob_str}")
+        tree_path_lp = stats.get("tree_path_log_probability")
+        block.append(f"Log probability (tree path): {tree_path_lp:.6f}" if tree_path_lp is not None else "Log probability (tree path): N/A")
         block.append(f"Probability: {prob_str}")
         block.append(f"Elapsed time: {elapsed}")
         block.append(f"Tokens generated: {tok_str}")
@@ -283,58 +277,58 @@ class Reporter:
         )
         block.append(
             "Tree stats: "
-            f"total={int(tree_stats.get('total', 0) or 0)}, "
-            f"max_depth={int(tree_stats.get('max_depth', 0) or 0)}, "
-            f"evaluated={int(tree_stats.get('evaluated', 0) or 0)}, "
-            f"queued={int(tree_stats.get('queued', 0) or 0)}"
+            f"total={tree_stats.get('total')}, "
+            f"max_depth={tree_stats.get('max_depth')}, "
+            f"evaluated={tree_stats.get('evaluated')}, "
+            f"queued={tree_stats.get('queued')}"
         )
         block.append(
             "Tokens by source: "
-            f"attack_sampling={int(tok_sources.get('attack_sampling', 0) or 0)}, "
-            f"sampling={int(tok_sources.get('sampling', 0) or 0)}, "
-            f"full_response_extend={int(tok_sources.get('full_response_extend', 0) or 0)}"
+            f"attack_sampling={tok_sources.get('attack_sampling')}, "
+            f"sampling={tok_sources.get('sampling')}, "
+            f"full_response_extend={tok_sources.get('full_response_extend')}"
         )
         cache_stats = stats.get("cache", {}) or {}
         block.append(
             "Cache: "
-            f"lookups={cache_stats.get('lookups', 0)}, "
-            f"full_hits={cache_stats.get('full_hits', 0)}, "
-            f"partial_hits={cache_stats.get('partial_hits', 0)}, "
-            f"full_hit_rate={float(cache_stats.get('full_hit_rate_pct', 0.0)):.2f}%, "
-            f"any_hit_rate={float(cache_stats.get('any_hit_rate_pct', 0.0)):.2f}%"
+            f"lookups={cache_stats.get('lookups')}, "
+            f"full_hits={cache_stats.get('full_hits')}, "
+            f"partial_hits={cache_stats.get('partial_hits')}, "
+            f"full_hit_rate={cache_stats.get('full_hit_rate_pct')}%, "
+            f"any_hit_rate={cache_stats.get('any_hit_rate_pct')}%"
         )
         refusal_filter = stats.get("refusal_filter", {}) or {}
         if refusal_filter:
             block.append(
                 "Refusal filter: "
-                f"refusal={int(refusal_filter.get('refusal_total', refusal_filter.get('confirmed_refusal', 0)) or 0)}, "
-                f"no_refusal_checked={int(refusal_filter.get('no_refusal_checked', 0) or 0)}, "
-                f"reverted={int(refusal_filter.get('reverted_total', refusal_filter.get('reverted_after_transition', 0)) or 0)}, "
-                f"total={int(refusal_filter.get('total', refusal_filter.get('total_checked', 0)) or 0)}, "
-                f"refusal_ratio={float(refusal_filter.get('confirmed_ratio_pct', 0.0)):.2f}%, "
-                f"no_refusal_ratio={float(refusal_filter.get('no_refusal_checked_ratio_pct', 0.0)):.2f}%, "
-                f"reverted_ratio={float(refusal_filter.get('reverted_ratio_pct', 0.0)):.2f}%"
+                f"refusal={refusal_filter.get('refusal_total')}, "
+                f"no_refusal_checked={refusal_filter.get('no_refusal_checked')}, "
+                f"reverted={refusal_filter.get('reverted_total')}, "
+                f"total={refusal_filter.get('total')}, "
+                f"refusal_ratio={refusal_filter.get('confirmed_ratio_pct')}%, "
+                f"no_refusal_ratio={refusal_filter.get('no_refusal_checked_ratio_pct')}%, "
+                f"reverted_ratio={refusal_filter.get('reverted_ratio_pct')}%"
             )
         buffer_stats = stats.get("buffer", {}) or {}
         sample_buf = buffer_stats.get("sample_buffer", {}) or {}
         judge_buf = buffer_stats.get("judging_buffer", {}) or {}
         block.append(
             "Sample buffer: "
-            f"capacity={int(sample_buf.get('capacity', 0) or 0)}, "
-            f"enqueued_items={int(sample_buf.get('enqueued_items', 0) or 0)}, "
-            f"items={int(sample_buf.get('items', 0) or 0)}, "
-            f"batches={int(sample_buf.get('batches', 0) or 0)}, "
-            f"mean_batch_size={float(sample_buf.get('mean_batch_size', 0.0)):.2f}, "
-            f"max_queue_size={int(sample_buf.get('max_queue_size', 0) or 0)}"
+            f"capacity={sample_buf.get('capacity')}, "
+            f"enqueued_items={sample_buf.get('enqueued_items')}, "
+            f"items={sample_buf.get('items')}, "
+            f"batches={sample_buf.get('batches')}, "
+            f"mean_batch_size={sample_buf.get('mean_batch_size')}, "
+            f"max_queue_size={sample_buf.get('max_queue_size')}"
         )
         block.append(
             "Judging buffer: "
-            f"capacity={int(judge_buf.get('capacity', 0) or 0)}, "
-            f"enqueued_items={int(judge_buf.get('enqueued_items', 0) or 0)}, "
-            f"items={int(judge_buf.get('items', 0) or 0)}, "
-            f"batches={int(judge_buf.get('batches', 0) or 0)}, "
-            f"mean_batch_size={float(judge_buf.get('mean_batch_size', 0.0)):.2f}, "
-            f"max_queue_size={int(judge_buf.get('max_queue_size', 0) or 0)}"
+            f"capacity={judge_buf.get('capacity')}, "
+            f"enqueued_items={judge_buf.get('enqueued_items')}, "
+            f"items={judge_buf.get('items')}, "
+            f"batches={judge_buf.get('batches')}, "
+            f"mean_batch_size={judge_buf.get('mean_batch_size')}, "
+            f"max_queue_size={judge_buf.get('max_queue_size')}"
         )
         block.append(f"Tree txt file: {tree_paths['txt']}")
         block.append(f"Tree json file: {tree_paths['json']}")
@@ -342,6 +336,14 @@ class Reporter:
             block.append("")
             block.append("[Profiling Report]")
             block.append(str(stats["profiling"]))
+        sampled = stats.get("sampled_responses", [])
+        if sampled:
+            block.append("")
+            block.append("Sampled Complete Responses:")
+            for si, s in enumerate(sampled):
+                block.append(f"  #{si+1} | Cum Log Prob: {s['cum_log_prob']:.6f} | Prob: {s['probability']:.6g}")
+                block.append(f"  {s['text'][:500]}")
+                block.append("")
         block.append(tail_separator)
         block.append("")
         with open(runs_txt_path, "a", encoding="utf-8") as f:

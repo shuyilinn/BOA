@@ -2,6 +2,7 @@ import os
 import torch
 from typing import List, Union, Tuple, Optional, Any
 from engines.base_engine import TargetModelEngineBase
+from profiler import profile
 
 # [shuyi: this file has not been reviewed yet]
 class VllmTargetModelEngine(TargetModelEngineBase):
@@ -118,9 +119,10 @@ class VllmTargetModelEngine(TargetModelEngineBase):
 
         return torch.stack(logits_list)
 
+    @profile("sampler.engine.forward_step")
     def forward_step(
-        self, 
-        input_ids: torch.Tensor, 
+        self,
+        input_ids: torch.Tensor,
         kv_cache: Optional[List[List[int]]] = None,
         attention_mask: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, List[List[int]]]:
@@ -132,7 +134,7 @@ class VllmTargetModelEngine(TargetModelEngineBase):
         from vllm import SamplingParams
         # NOTE: vLLM does NOT consume attention_mask. For prefill, we must strip padding
         # tokens ourselves (Sampler uses left padding).
-        
+
         # 1. Build full context (vLLM needs full history for prefix cache)
         if kv_cache is None:
             # Prefill: build history once.
@@ -157,7 +159,7 @@ class VllmTargetModelEngine(TargetModelEngineBase):
 
         # 2. Params: 1 step, need logits
         sampling_params = SamplingParams(
-            max_tokens=1, 
+            max_tokens=1,
             logprobs=self.logprobs_topk,
             temperature=0
         )
@@ -178,11 +180,11 @@ class VllmTargetModelEngine(TargetModelEngineBase):
                 ids = torch.tensor(list(first_gen_logprobs.keys()), device=self.device)
                 vals = torch.tensor(list(first_gen_logprobs.values()), device=self.device, dtype=torch.float16)
                 step_tensor[ids] = vals
-            
+
             logits_list.append(step_tensor)
 
         logits = torch.stack(logits_list)
-        
+
         # 5. Return logits and updated full history as "cache"
         return logits, full_sequences
 

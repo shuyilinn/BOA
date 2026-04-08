@@ -22,6 +22,8 @@ _ensure_awq_transformers_compat()
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from engines.base_engine import TargetModelEngineBase
+from profiler import profile
+from profiler.decorators import profile_block
 # [shuyi: this file has not been reviewed yet]
 
 class HuggingFaceTargetModelEngine(TargetModelEngineBase):
@@ -114,9 +116,10 @@ class HuggingFaceTargetModelEngine(TargetModelEngineBase):
         # return shape: [batch_size, vocab_size]
         return outputs.logits[:, -1, :]
 
+    @profile("sampler.engine.forward_step")
     def forward_step(
-        self, 
-        input_ids: torch.Tensor, 
+        self,
+        input_ids: torch.Tensor,
         kv_cache: Optional[Any] = None,
         attention_mask: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, Any]:
@@ -129,24 +132,25 @@ class HuggingFaceTargetModelEngine(TargetModelEngineBase):
             input_ids = input_ids.to(self.device)
 
         # Prefill: pass attention_mask; Decode: HF handles causal mask
-        
+
         model_kwargs = {
             "input_ids": input_ids,
             "past_key_values": kv_cache,
             "use_cache": True,
         }
-        # Only apply attention_mask on prefill; decode stage usually doesn't need it.
-        if kv_cache is None and attention_mask is not None:
+        if attention_mask is not None:
             if attention_mask.device != self.device:
                 attention_mask = attention_mask.to(self.device)
             model_kwargs["attention_mask"] = attention_mask
-
-        with torch.no_grad():
-            outputs = self.model(**model_kwargs)
         
+        with profile_block("sampler.engine.model_forward"):
+            with torch.no_grad():
+                outputs = self.model(**model_kwargs)
+        
+
         # logits: [B, L, V] or [B, 1, V]; take [:, -1, :]
         next_token_logits = outputs.logits[:, -1, :]
-        
+
         return next_token_logits, outputs.past_key_values
 
     def generate(

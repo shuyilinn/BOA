@@ -29,6 +29,7 @@ class TreeGuideJudger:
         local_judger_engine: JudgerEngineBase,
         api_judger_engine: JudgerEngineBase,
         config: Any = None,
+        env_judger: Optional[BaseAtomicJudger] = None,
         layer1_judger: Optional[BaseAtomicJudger] = None,
         layer2_judger: Optional[BaseAtomicJudger] = None,
         layer3_judger: Optional[BaseAtomicJudger] = None,
@@ -38,6 +39,7 @@ class TreeGuideJudger:
         self.layer3_filter_threshold = float(self.config.layer3_filter_threshold)
         self.local_judger_engine = local_judger_engine
         self.api_judger_engine = api_judger_engine
+        self.env_judger = env_judger
         self.layer1_judger = layer1_judger
         self.layer2_judger = layer2_judger
         self.layer3_judger = layer3_judger
@@ -140,25 +142,97 @@ class TreeGuideJudger:
         final_results: List[Optional[AtomicJudgerResult]] = [None] * len(samples)
         pending_indices = list(range(len(samples)))
 
-        if mode.use_layer1:
-            pending_indices = self._apply_judger(self.layer1_judger, pending_indices, samples, final_results)
+        if self.env_judger is not None:
+            pending_indices = self._apply_judger(self.env_judger, pending_indices, samples, final_results)
             if not pending_indices:
                 return [result.to_dict() for result in final_results if result is not None]
 
-        if mode.use_layer2:
-            pending_indices = self._apply_judger(self.layer2_judger, pending_indices, samples, final_results)
+        if mode.use_layer1 or mode.use_layer2:
+            pending_indices = self._apply_refusal_judgers(
+                pending_indices, samples, final_results,
+                use_layer1=mode.use_layer1, use_layer2=mode.use_layer2,
+            )
             if not pending_indices:
                 return [result.to_dict() for result in final_results if result is not None]
 
         pending_indices = self._apply_judger(self.layer3_judger, pending_indices, samples, final_results)
 
         if mode.use_layer4 and self.layer4_judger and pending_indices:
+            for idx in pending_indices:
+                if final_results[idx] is not None:
+                    self._log_atomic_result(final_results[idx], idx, passed_to_layer4=True)
             self._apply_judger(self.layer4_judger, pending_indices, samples, final_results)
 
         if any(result is None for result in final_results):
             missing = sum(1 for result in final_results if result is None)
             raise RuntimeError(f"judger pipeline produced incomplete results: missing={missing}, total={len(samples)}")
         return [result.to_dict() for result in final_results if result is not None]
+
+    def _apply_refusal_judgers(
+        self,
+        pending_indices: List[int],
+        samples: List[JudgerSample],
+        final_results: List[Optional[AtomicJudgerResult]],
+        use_layer1: bool = True,
+        use_layer2: bool = True,
+    ) -> List[int]:
+        """
+        Run L1 and L2 refusal judgers with OR logic: a sample is only stopped
+        (marked as refusal) if ALL enabled judgers agree it's a refusal.
+        If either one passes, the sample continues to the next layer.
+        """
+        if not pending_indices:
+            return []
+
+        # If neither judger is available, nothing to filter — pass everything through.
+        if (not use_layer1 or self.layer1_judger is None) and (not use_layer2 or self.layer2_judger is None):
+            return pending_indices
+
+        # Collect per-judger results
+        l1_results: Optional[List[AtomicJudgerResult]] = None
+        l2_results: Optional[List[AtomicJudgerResult]] = None
+        batch_samples = [samples[idx] for idx in pending_indices]
+
+        if use_layer1 and self.layer1_judger is not None:
+            l1_results = self.layer1_judger.batch_judge(batch_samples)
+            for idx_in_batch, result in enumerate(l1_results):
+                self._log_atomic_result(result, pending_indices[idx_in_batch])
+
+        if use_layer2 and self.layer2_judger is not None:
+            l2_results = self.layer2_judger.batch_judge(batch_samples)
+            for idx_in_batch, result in enumerate(l2_results):
+                self._log_atomic_result(result, pending_indices[idx_in_batch])
+
+        next_pending: List[int] = []
+        for i, idx in enumerate(pending_indices):
+            l1_stop = l1_results[i].action == JudgerAction.STOP if l1_results else False
+            l2_stop = l2_results[i].action == JudgerAction.STOP if l2_results else False
+
+            # OR logic: only stop if ALL enabled judgers say stop
+            both_stop = (l1_stop or not (use_layer1 and self.layer1_judger)) and \
+                        (l2_stop or not (use_layer2 and self.layer2_judger))
+
+            if both_stop:
+                # Use the result from whichever layer is available (prefer L2 as it's more detailed)
+                result = l2_results[i] if l2_results else l1_results[i]
+                final_results[idx] = result
+                logger.info(
+                    "L1+L2 OR: both judgers agree on refusal at idx=%s, stopping.", idx
+                )
+            else:
+                # At least one judger passed — continue to next layer
+                # Store the result from whichever judger passed, or L1 if both passed
+                if l1_results and not l1_stop:
+                    final_results[idx] = l1_results[i]
+                elif l2_results and not l2_stop:
+                    final_results[idx] = l2_results[i]
+                elif l1_results:
+                    final_results[idx] = l1_results[i]
+                elif l2_results:
+                    final_results[idx] = l2_results[i]
+                next_pending.append(idx)
+
+        return next_pending
 
     def _apply_judger(
         self,
@@ -219,26 +293,17 @@ class TreeGuideJudger:
         for rank, idx in enumerate(api_indices, start=1):
             sample = samples[idx]
             logger.warning(
-                "LAYER%s INPUT[%s/%s]: prompt=\n%s\nresponse=\n%s\nfull_candidate=\n%s",
+                "LAYER%s INPUT[%s/%s]: prompt=\n%s\nresponse=\n%s\n",
                 judger.layer,
                 rank,
                 total_api,
                 sample.prompt,
                 sample.response,
-                f"{sample.prompt}{sample.response}",
             )
 
         next_pending: List[int] = []
         for pos, idx in enumerate(api_indices):
             sample = samples[idx]
-            logger.warning(
-                "LAYER%s SEND[idx=%s]: prompt=\n%s\nresponse=\n%s\nfull_candidate=\n%s",
-                judger.layer,
-                idx,
-                sample.prompt,
-                sample.response,
-                f"{sample.prompt}{sample.response}",
-            )
             result = judger.judge(sample.prompt, sample.response, metadata=sample.metadata)
             prev = final_results[idx]
             if prev is not None:
@@ -271,23 +336,30 @@ class TreeGuideJudger:
                 break
         return next_pending
 
-    def _log_atomic_result(self, result: AtomicJudgerResult, idx: int) -> None:
-        logger.info(
-            "LAYER%s RESULT[idx=%s]: action=%s is_safe=%s score=%s response=\n%s",
+    def _log_atomic_result(self, result: AtomicJudgerResult, idx: int, passed_to_layer4: bool = False) -> None:
+        if passed_to_layer4 and result.layer == 3:
+            logger.warning(
+                "!!! PASSED LAYER3 RESULT[idx=%s]: status=%s is_safe=%s score=%s\nmodel_response=\n%s\njudger_response=\n%s !!!",
+                idx,
+                result.action.value,
+                bool(result.is_safe),
+                float(result.score),
+                result.response if result.response else "NULL",
+                result.raw_output if result.raw_output else "NULL",
+            )
+            return
+
+        log_fn = logger.warning if result.layer == 4 else logger.info
+        log_fn(
+            "!!! LAYER%s RESULT[idx=%s]: status=%s is_safe=%s score=%s\nmodel_response=\n%s\njudger_response=\n%s !!!",
             result.layer,
             idx,
             result.action.value,
             bool(result.is_safe),
             float(result.score),
-            result.response,
+            result.response if result.response else "NULL",
+            result.raw_output if result.raw_output else "NULL",
         )
-        if result.raw_output:
-            logger.info(
-                "LAYER%s FEEDBACK[idx=%s]:\n%s",
-                result.layer,
-                idx,
-                result.raw_output,
-            )
 
     def _clean_response(self, response: str) -> str:
         if not response:
@@ -355,13 +427,6 @@ class TreeGuideJudger:
             if match:
                 earliest_pos = min(earliest_pos, match.start())
 
-        question_patterns = [
-            r"\.\s*I want to\s+",
-            r"\.\s*Can you\s+",
-            r"\.\s*How do I\s+",
-            r"\.\s*What is\s+",
-            r"\.\s*Tell me\s+",
-        ]
         min_response_length = 50
         if len(cleaned) > min_response_length:
             for pattern in question_patterns:

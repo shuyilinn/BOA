@@ -11,6 +11,7 @@ import torch
 from typing import List, Tuple, Optional
 from sampler.customized_sampler import CustomizedSampler
 from utils.logger import setup_logger
+from profiler import profile, profile_block, maybe_torch_profile, get_torch_profile_dir
 
 logger = setup_logger("Sampler")
 
@@ -25,10 +26,8 @@ class Sampler:
         self.stop_token_ids = self._resolve_stop_token_ids()
         self._stop_lookup: Optional[torch.Tensor] = None
         logger.info(
-            "Sampler stop config: stop_token_ids=%s tokenizer_eos_token_id=%s eos_token=%r",
+            "Sampler stop config: stop_token_ids=%s",
             self.stop_token_ids,
-            self.tokenizer.eos_token_id,
-            getattr(self.tokenizer, "eos_token", None),
         )
 
     def _resolve_stop_token_ids(self) -> List[int]:
@@ -67,13 +66,6 @@ class Sampler:
             self._stop_lookup = lookup
         return self._stop_lookup
 
-    def get_batch_size(self) -> int:
-        """
-        Non-runtime hint used by upper layers (e.g. buffer capacity).
-        Runtime sampling batch size is controlled by RuntimeOOMBatchRunner.
-        """
-        return max(1, int(self.config.sampler_batch_size))
-
     def uniform_generate(self, token_ids: List[int]) -> List[int]:
         return self.batch_generate([token_ids])[0]
 
@@ -81,6 +73,7 @@ class Sampler:
         self,
         batch_token_ids: List[List[int]],
         *,
+        base_generated_lens: Optional[List[int]] = None,
         max_new_tokens: Optional[int] = None,
         return_invalid_flags: bool = False,
     ):
@@ -89,6 +82,7 @@ class Sampler:
         if return_invalid_flags:
             tokens, invalid_flags = self.batch_uniform_generate_with_tau(
                 batch_token_ids,
+                base_generated_lens=base_generated_lens,
                 return_tau=False,
                 compute_tau=tau_gate_enabled,
                 max_new_tokens=max_new_tokens,
@@ -97,6 +91,7 @@ class Sampler:
             return tokens, invalid_flags
         tokens = self.batch_uniform_generate_with_tau(
             batch_token_ids,
+            base_generated_lens=base_generated_lens,
             return_tau=False,
             compute_tau=tau_gate_enabled,
             max_new_tokens=max_new_tokens,
@@ -104,10 +99,12 @@ class Sampler:
         )
         return tokens
 
+    @profile("sampler.generate")
     def batch_uniform_generate_with_tau(
         self,
         batch_token_ids: List[List[int]],
         *,
+        base_generated_lens: Optional[List[int]] = None,
         return_tau: bool = True,
         compute_tau: bool = True,
         max_new_tokens: Optional[int] = None,
@@ -120,6 +117,7 @@ class Sampler:
         - Tau is always accumulated from full-distribution log-prob provided by sampler.
         - Threshold prune / tau rollback are handled in this driver loop.
         """
+        
         if not batch_token_ids:
             if return_tau and return_invalid_flags:
                 return [], [], []
@@ -136,143 +134,183 @@ class Sampler:
             else self.config.sample_new_tokens
         )
 
-        input_ids, attention_mask = self._prepare_inputs(batch_token_ids)
-        device = self.engine.device
-        B = input_ids.size(0)
-        # Prefer explicit override for this call; fallback to config.sample_new_tokens.
-        T = effective_max_new_tokens
-        eos = self.tokenizer.eos_token_id
-        pad = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else (eos or 0)
+        with profile_block("sampler.generate.init"):
+            input_ids, attention_mask = self._prepare_inputs(batch_token_ids)
+            device = self.engine.device
+            B = input_ids.size(0)
+            # Prefer explicit override for this call; fallback to config.sample_new_tokens.
+            T = effective_max_new_tokens
+            eos = self.tokenizer.eos_token_id
+            pad = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else (eos or 0)
 
-        # Pre-allocate output on GPU: up to T tokens per sample (excl. EOS)
-        out_tokens = torch.full((B, T), pad, device=device, dtype=torch.long)
+            # Pre-allocate output on GPU: up to T tokens per sample (excl. EOS)
+            out_tokens = torch.full((B, T), pad, device=device, dtype=torch.long)
 
-        # Last written position per sample (-1 = none yet)
-        last_written_step = torch.full((B,), -1, device=device, dtype=torch.long)
+            # Last written position per sample (-1 = none yet)
+            last_written_step = torch.full((B,), -1, device=device, dtype=torch.long)
 
-        # Step at which sequence terminates (EOS or tau-threshold prune), -1 = not yet
-        stop_step = torch.full((B,), -1, device=device, dtype=torch.long)
+            # Step at which sequence terminates (EOS or tau-threshold prune), -1 = not yet
+            stop_step = torch.full((B,), -1, device=device, dtype=torch.long)
 
-        # Map active batch indices back to original batch
-        active_orig = torch.arange(B, device=device, dtype=torch.long)
+            # Map active batch indices back to original batch
+            active_orig = torch.arange(B, device=device, dtype=torch.long)
 
-        tau: Optional[torch.Tensor] = None
-        if compute_tau:
-            tau = torch.zeros((B,), device=device, dtype=torch.float32)
-        threshold = self.log_probability_threshold
-        tau_gate_enabled = bool(compute_tau and threshold is not None and len(threshold) > 0)
-        invalid_due_to_tau_gate = (
-            torch.zeros((B,), device=device, dtype=torch.bool)
-            if return_invalid_flags and tau_gate_enabled
-            else None
-        )
-        stop_lookup = self._get_stop_lookup(device)
+            tau: Optional[torch.Tensor] = None
+            if compute_tau:
+                tau = torch.zeros((B,), device=device, dtype=torch.float32)
+            threshold = self.log_probability_threshold
+            tau_gate_enabled = bool(compute_tau and threshold is not None and len(threshold) > 0)
+            invalid_due_to_tau_gate = (
+                torch.zeros((B,), device=device, dtype=torch.bool)
+                if return_invalid_flags and tau_gate_enabled
+                else None
+            )
+            stop_lookup = self._get_stop_lookup(device)
 
-        smoothing_steps = self.config.uniform_smoothing_steps
-        _sf_full = self.config.uniform_smoothing_factor
+            smoothing_steps = self.config.uniform_smoothing_steps
+            _sf_full = self.config.uniform_smoothing_factor
 
-        with torch.no_grad():
+            # Per-row base offset for smoothing cutoff (in original batch coordinate system).
+            # If not provided, defaults to all zeros (treat each sequence as starting from token 0).
+            if base_generated_lens is not None:
+                _base_lens = torch.tensor(base_generated_lens, device=device, dtype=torch.long)
+            else:
+                _base_lens = torch.zeros(B, device=device, dtype=torch.long)
+            # Once all active sequences pass their smoothing window, skip per-row sf computation.
+            _smoothing_all_done = not (smoothing_steps > 0 and _sf_full > 0)
+
+            _tprof_steps = int(getattr(self.config, "torch_profiler_steps", 0))
+            _tprof_dir = get_torch_profile_dir() if _tprof_steps > 0 else None
+
+        with torch.no_grad(), maybe_torch_profile(_tprof_dir, steps=_tprof_steps) as tprof:
             # Prefill (engine.forward_step returns [B, V] logits)
             logits, past_kv = self.engine.forward_step(input_ids, kv_cache=None, attention_mask=attention_mask)
+            # Extend mask for decode steps: each generated token is valid (1).
+            decode_mask = torch.cat([attention_mask, torch.ones((B, 1), dtype=attention_mask.dtype, device=device)], dim=1)
+            if _tprof_steps > 0:
+                torch.cuda.synchronize()
             current_logits = logits
 
             for step in range(T):
-                tau_prev: Optional[torch.Tensor] = None
-                min_log_prob: Optional[torch.Tensor] = None
-                if tau is not None:
-                    tau_prev = tau.index_select(0, active_orig)
-                    if threshold is not None and step < len(threshold):
-                        min_log_prob = float(threshold[step]) - tau_prev
+                with profile_block("sampler.generate.prepare_tau"):
+                    tau_prev: Optional[torch.Tensor] = None
+                    min_log_prob: Optional[torch.Tensor] = None
+                    if tau is not None:
+                        tau_prev = tau.index_select(0, active_orig)
+                        if threshold is not None and step < len(threshold):
+                            min_log_prob = float(threshold[step]) - tau_prev
 
-                sf = _sf_full if (smoothing_steps == 0 or step < smoothing_steps) else 0.0
+                with profile_block("sampler.generate.smoothing"):
+                    # Per-row smoothing: compute effective step for each active sequence.
+                    # effective_step[i] = base_generated_len[orig_i] + local_step
+                    if _smoothing_all_done:
+                        sf = 0.0
+                    elif smoothing_steps == 0 or _sf_full <= 0:
+                        sf = _sf_full
+                    else:
+                        active_base_lens = _base_lens.index_select(0, active_orig)  # [B_active]
+                        still_smoothing = (active_base_lens + step) < smoothing_steps  # [B_active] bool
+                        if still_smoothing.any().item():
+                            sf = torch.where(still_smoothing, _sf_full, 0.0).unsqueeze(1)  # [B_active, 1]
+                        else:
+                            sf = 0.0
+                            _smoothing_all_done = True  # skip per-row computation for all future steps
+
                 sample_res = self.cs.sample_step(
                     current_logits,
                     sf,
                     min_log_prob=min_log_prob,
                 )
+                if tprof is not None:
+                    tprof.step()
                 next_tokens = sample_res["tokens"]
                 full_log_probs = sample_res["full_log_probs"]
                 has_valid_token = sample_res["has_valid_token"]
 
-                no_valid_token = ~has_valid_token
-                is_eos = stop_lookup[next_tokens]
-                if tau is not None:
-                    tau_next = tau_prev + full_log_probs.to(tau.dtype)
-                    if threshold is not None and step < len(threshold):
-                        # Enforce per-position cumulative lower bound at the current step.
-                        # If current sampled token violates threshold[t], prune immediately
-                        # and rollback tau update for this token.
-                        below_threshold = has_valid_token & (tau_next < float(threshold[step]))
-                        commit_mask = has_valid_token & (~below_threshold)
-                        tau_gate_fail_mask = below_threshold | no_valid_token
-                        stop_mask = is_eos | below_threshold | no_valid_token
+                with profile_block("sampler.generate.tau_update"):
+                    no_valid_token = ~has_valid_token
+                    is_eos = stop_lookup[next_tokens]
+                    if tau is not None:
+                        tau_next = tau_prev + full_log_probs.to(tau.dtype)
+                        if threshold is not None and step < len(threshold):
+                            below_threshold = has_valid_token & (tau_next < float(threshold[step]))
+                            commit_mask = has_valid_token & (~below_threshold)
+                            tau_gate_fail_mask = below_threshold | no_valid_token
+                            stop_mask = is_eos | below_threshold | no_valid_token
+                        else:
+                            commit_mask = has_valid_token
+                            tau_gate_fail_mask = no_valid_token
+                            stop_mask = is_eos | no_valid_token
+                        tau.index_copy_(
+                            0,
+                            active_orig[commit_mask],
+                            tau_next[commit_mask],
+                        )
                     else:
-                        commit_mask = has_valid_token
                         tau_gate_fail_mask = no_valid_token
                         stop_mask = is_eos | no_valid_token
-                    # index_copy_ with empty indices is a no-op; skip the .any() sync
-                    tau.index_copy_(
-                        0,
-                        active_orig[commit_mask],
-                        tau_next[commit_mask],
-                    )
-                else:
-                    tau_gate_fail_mask = no_valid_token
-                    stop_mask = is_eos | no_valid_token
-                still_active = ~stop_mask
+                    still_active = ~stop_mask
 
-                # Single GPU→CPU sync covers A/B/C/D control flow (was 4-5 separate syncs)
-                n_stopped = stop_mask.sum().item()
-                B_active = active_orig.numel()
+                with profile_block("sampler.generate.batch_update"):
+                    # Single GPU→CPU sync covers A/B/C/D control flow (was 4-5 separate syncs)
+                    n_stopped = stop_mask.sum().item()
+                    B_active = active_orig.numel()
 
-                # A) Record stop_step for just-finished rows
-                if n_stopped > 0:
-                    finished_orig = active_orig[stop_mask]
-                    stop_step[finished_orig] = step
-                    if invalid_due_to_tau_gate is not None:
-                        invalid_due_to_tau_gate.index_fill_(0, active_orig[tau_gate_fail_mask], True)
+                    # A) Record stop_step for just-finished rows
+                    if n_stopped > 0:
+                        finished_orig = active_orig[stop_mask]
+                        stop_step[finished_orig] = step
+                        if invalid_due_to_tau_gate is not None:
+                            invalid_due_to_tau_gate.index_fill_(0, active_orig[tau_gate_fail_mask], True)
 
-                # B) Write token to out_tokens for still-active rows
-                if n_stopped < B_active:
-                    active_orig_still = active_orig[still_active]
-                    tokens_still = next_tokens[still_active]
-                    out_tokens[active_orig_still, step] = tokens_still
-                    last_written_step[active_orig_still] = step
+                    # B) Write token to out_tokens for still-active rows
+                    if n_stopped < B_active:
+                        active_orig_still = active_orig[still_active]
+                        tokens_still = next_tokens[still_active]
+                        out_tokens[active_orig_still, step] = tokens_still
+                        last_written_step[active_orig_still] = step
 
-                # C) All done -> break
-                if n_stopped == B_active:
-                    break
+                    # C) All done -> break
+                    if n_stopped == B_active:
+                        break
 
-                # D) Some finished: shrink batch and KV cache
-                if 0 < n_stopped < B_active:
-                    active_rows = still_active.nonzero(as_tuple=True)[0]
-                    next_tokens = next_tokens.index_select(0, active_rows)
-                    active_orig = active_orig.index_select(0, active_rows)
-                    past_kv = self._shrink_kv_cache(past_kv, active_rows)
+                with profile_block("sampler.generate.shrink_batch"):
+                    # D) Some finished: shrink batch and KV cache
+                    if 0 < n_stopped < B_active:
+                        active_rows = still_active.nonzero(as_tuple=True)[0]
+                        next_tokens = next_tokens.index_select(0, active_rows)
+                        active_orig = active_orig.index_select(0, active_rows)
+                        past_kv = self._shrink_kv_cache(past_kv, active_rows)
+                        decode_mask = decode_mask.index_select(0, active_rows)
 
                 # E) Incremental forward (batch may have shrunk)
-                logits, past_kv = self.engine.forward_step(next_tokens.unsqueeze(-1), kv_cache=past_kv)
+                logits, past_kv = self.engine.forward_step(next_tokens.unsqueeze(-1), kv_cache=past_kv, attention_mask=decode_mask)
+                # Extend mask for next decode step
+                decode_mask = torch.cat([decode_mask, torch.ones((decode_mask.size(0), 1), dtype=decode_mask.dtype, device=device)], dim=1)
+                if _tprof_steps > 0:
+                    torch.cuda.synchronize()
                 current_logits = logits
 
-        # Assemble List[List[int]], move to CPU once
-        out_tokens_cpu = out_tokens.cpu()
-        stop_step_cpu = stop_step.cpu()
-        last_written_cpu = last_written_step.cpu()
-        lengths = torch.where(stop_step_cpu == -1, last_written_cpu + 1, stop_step_cpu).clamp(min=0)
+        with profile_block("sampler.generate.assemble_results"):
+            # Assemble List[List[int]], move to CPU once
+            out_tokens_cpu = out_tokens.cpu()
+            stop_step_cpu = stop_step.cpu()
+            last_written_cpu = last_written_step.cpu()
+            lengths = torch.where(stop_step_cpu == -1, last_written_cpu + 1, stop_step_cpu).clamp(min=0)
 
-        results: List[List[int]] = [
-            out_tokens_cpu[i, :lengths[i].item()].tolist() for i in range(B)
-        ]
+            results: List[List[int]] = [
+                out_tokens_cpu[i, :lengths[i].item()].tolist() for i in range(B)
+            ]
 
-        tau_list: List[float] = []
-        if return_tau and tau is not None:
-            tau_list = tau.detach().cpu().tolist()
-        invalid_flags = None
-        if return_invalid_flags:
-            if invalid_due_to_tau_gate is None:
-                invalid_flags = [False] * B
-            else:
-                invalid_flags = invalid_due_to_tau_gate.detach().cpu().tolist()
+            tau_list: List[float] = []
+            if return_tau and tau is not None:
+                tau_list = tau.detach().cpu().tolist()
+            invalid_flags = None
+            if return_invalid_flags:
+                if invalid_due_to_tau_gate is None:
+                    invalid_flags = [False] * B
+                else:
+                    invalid_flags = invalid_due_to_tau_gate.detach().cpu().tolist()
 
         if return_tau and return_invalid_flags:
             return results, tau_list, invalid_flags
@@ -288,6 +326,7 @@ class Sampler:
     def generate(self, token_ids: List[int]) -> List[int]:
         return self.engine.generate(token_ids)
 
+    @profile("sampler.prepare_inputs")
     def _prepare_inputs(self, batch_ids: List[List[int]]):
         B = len(batch_ids)
         max_len = max((len(x) for x in batch_ids), default=0)

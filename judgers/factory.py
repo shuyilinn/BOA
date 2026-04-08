@@ -3,8 +3,10 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, Tuple
 
 from judgers.atomic.agent_safety_judger import AgentSafetyJudger
+from judgers.atomic.agent_scoring_judger import AgentScoringJudger
 from judgers.atomic.api_nuanced_judger import ApiNuancedJudger
-from judgers.atomic.nuanced_judger import BoaJudger
+from judgers.atomic.boajudger import BoaJudger
+from judgers.atomic.env_judger import EnvJudger
 from judgers.atomic.refusal_judger import RefusalJudger
 from judgers.atomic.refusal_state_machine import RefusalPatternJudger
 from judgers.base_judger import PipelineJudger
@@ -46,7 +48,9 @@ def _build_agent_judger(
         local_judger_engine=local_judger_engine,
         api_judger_engine=api_judger_engine,
         config=config,
+        env_judger=EnvJudger(),
         layer1_judger=None,
+        # layer2_judger=AgentScoringJudger(local_judger_engine, filter_threshold=float(config.layer3_filter_threshold)),
         layer2_judger=None,
         layer3_judger=AgentSafetyJudger(local_judger_engine),
         layer4_judger=None,

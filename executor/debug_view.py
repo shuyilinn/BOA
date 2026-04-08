@@ -5,6 +5,8 @@ from typing import Any, List
 
 
 def node_brief(node: Any) -> str:
+    # path_len uses legacy get_path_token_ids for debug logging only.
+    # This is acceptable per DESIGN_conversation_state.md §2 (debug/metrics).
     path_len = len(node.get_path_token_ids())
     text_full = (getattr(node, "text", "") or "").replace("\n", "\\n")
     status_val = getattr(getattr(node, "status", None), "value", "N/A")
@@ -37,8 +39,9 @@ def build_tree_snapshot(root: Any, *, max_depth: int, max_nodes: int) -> str:
         text = (getattr(node, "text", "") or "").replace("\n", " ")
         token_ids = getattr(node, "token_ids", None) or []
         token_id = token_ids[-1] if token_ids else "N/A"
+        role = node.role.value
         lines.append(
-            f"{prefix}- [{status}] '{text}' (id: {token_id}), "
+            f"{prefix}- [{status}] '{text}' (id: {token_id}), role: {role}, "
             f"LOGP: {float(getattr(node, 'log_prob', 0.0)):.2f}, "
             f"CUM_LOGP: {float(getattr(node, 'cum_log_prob', 0.0)):.2f}, "
             f"score: {float(getattr(node, 'score', 0.0)):.1f}"

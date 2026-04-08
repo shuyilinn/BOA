@@ -244,6 +244,10 @@ BOA/
 └── config.py
 ```
 
+## Run web:
+```bash
+python -m web.app
+```
 ## Citation
 
 Coming Soon

@@ -47,7 +47,7 @@ class MockTokenizer:
         data = text.encode("utf-8", errors="ignore")
         return [int(b) + 2 for b in data]
 
-    def decode(self, ids: List[int], skip_special_tokens: bool = True) -> str:
+    def decode(self, ids: List[int], skip_special_tokens: bool = False) -> str:
         data: List[int] = []
         for tid in ids:
             if skip_special_tokens and tid in (self.eos_token_id, self.pad_token_id):

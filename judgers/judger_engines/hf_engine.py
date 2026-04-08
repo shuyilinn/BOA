@@ -46,4 +46,4 @@ class HFLocalJudgerEngine(JudgerEngineBase):
 
         # Strip input prompt from output
         new_tokens = output_ids[:, inputs.input_ids.shape[-1] :]
-        return self.tokenizer.batch_decode(new_tokens, skip_special_tokens=True)
+        return self.tokenizer.batch_decode(new_tokens, skip_special_tokens=False)

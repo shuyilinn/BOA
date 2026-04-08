@@ -10,10 +10,15 @@ When adding or refactoring modules, align with these conventions first and keep 
 - **Incremental fields**
   - `token_ids` / `text`: only the newly added token/text segment from parent to current node.
   - `log_prob`: only the log-probability of this incremental generation step (when applicable).
-- **Full path fields**
-  - Use `TreeNode.get_path_token_ids()` / `TreeNode.get_path_text()` to obtain the full sequence from root to current node.
+- **Canonical conversation state**
+  - `conversation_state` (`ConversationState`): the single source of truth for a node's conversation history.
+    Contains `committed_messages` (completed turns) + `pending` (unfinished assistant suffix) + `tools` (schemas).
+  - Use `build_node_model_input(node, tokenizer, model_name)` to render model input from canonical state.
+  - Use `node.conversation_state.latest_assistant_text()` to read the current assistant output.
+- **Legacy debug helpers** (do NOT use for runtime decisions)
+  - `get_path_token_ids()` / `get_path_text()`: incremental concatenation, retained for debug/metrics only.
 
-Convention: **Anything sent to model input, judger input, or cache keys must use `get_path_*()`; never treat `token_ids`/`text` as full context.**
+Convention: **All model input, judger input, cache keys, and conversation content must derive from `conversation_state`. Never use `token_ids`/`text` concatenation as semantic truth. See `DESIGN_conversation_state.md` for full specification.**
 
 ## Probability Semantics (Sampling vs Tau / log_p)
 
@@ -41,6 +46,8 @@ In the table below, "write" means field mutation is allowed; "read-only" means r
 | `source` | ✗ | **✓** (set once by creator) | ✓ (fill only if missing) | ✗ | ✗ | ✗ |
 | `status` (lifecycle) | ✗ | ✗ (forbidden) | **✓** (single owner) | ✗ | ✓ (`QUEUED` / `CUT` only; see below) | ✗ |
 | `score` / `scores` (judging score) | ✗ | ✗ | ✓ (aggregate/append/persist) | **✓** (compute/write) | ✗ (read-only) | ✗ (store value only; do not mutate node) |
+| `conversation_state` | ✗ | **✓** (pending append, commit) | ✓ (initial setup) | ✗ (read-only) | ✗ (read-only) | ✗ |
+| `delta` (ConversationDelta) | ✗ | **✓** (set at creation/commit) | ✓ (root Noop only) | ✗ | ✗ | ✗ |
 
 ### Additional Metadata Constraints (Strongly Recommended)
 
@@ -73,6 +80,17 @@ Exception: if Searcher writes `QUEUED` / `CUT`, it must follow:
 - Searcher writes **search-policy-only states** (`QUEUED`, `CUT`, etc.).
 - Searcher does **not** write pipeline runtime states (`EXPANDING`, `EVALUATING`, `EVALUATED`).
 
+## ConversationState Lifecycle
+
+`ConversationState` follows a strict pending → commit lifecycle.
+See `DESIGN_conversation_state.md` for the full specification.
+
+- **Pending**: `L2Expander` appends chunks to `conversation_state.pending` via `append_pending_assistant()` during tree expansion.
+- **Commit (single-turn EOS)**: `L1Expander.expand_after_eos()` calls `commit_assistant_turn()` to promote pending into a committed assistant message.
+- **Commit (tool interaction)**: `L1Expander.expand_after_eos()` calls `commit_tool_interaction()` on TOOL nodes, committing both the assistant tool-call message and tool result.
+- **Copy-on-write**: child nodes clone the parent's `ConversationState` in `__post_init__` so siblings never share mutable references.
+- **Delta tagging**: every node sets `delta` (`ConversationDelta`) to describe what it contributed relative to its parent.
+
 ## Expander Contract (Do Not Compete with Executor for Runtime State)
 
 - **L3Expander**: pure algorithmic black box; returns candidate tuples (`ids/text/log_p`) only; no `TreeNode` mutation.
@@ -91,6 +109,6 @@ Executor converts "structural nodes" into "runtime nodes":
 ## Quick Checklist (Before You Code)
 
 - Did I modify `status` or `score/scores` inside an Expander? -> **Not allowed**
-- Did I use `node.token_ids` as full prompt context? -> Use `get_path_token_ids()`
+- Did I use `node.token_ids` or `get_path_text()` as full prompt context? -> Use `build_node_model_input()` or `conversation_state`
 - Did I append with `node.children.append(...)` directly? -> Use `node.add_child(...)`
 - Did I write potentially colliding metadata keys? -> Add a module prefix

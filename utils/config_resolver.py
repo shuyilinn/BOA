@@ -47,6 +47,10 @@ def resolve_config() -> Config:
     parser.add_argument("--harmful_prompt_start", type=int, default=None)
     parser.add_argument("--harmful_prompt_end", type=int, default=None)
     parser.add_argument("--workload_name", type=str, default=None)
+    parser.add_argument("--prompt_indices", type=str, default=None,
+                        help="Comma-separated 1-based prompt indices, e.g. '1,3,5,10'")
+    parser.add_argument("--benchmark_path", type=str, default=None,
+                        help="Override benchmark path in workload_configs")
 
     # Search / expansion
     parser.add_argument("--chunk_size", type=int, default=None)
@@ -57,6 +61,11 @@ def resolve_config() -> Config:
     parser.add_argument("--dynamic_max_prob_threshold", type=float, default=None)
     parser.add_argument("--dynamic_entropy_threshold", type=float, default=None)
     parser.add_argument("--dynamic_margin_threshold", type=float, default=None)
+
+    # Search selection strategy
+    parser.add_argument("--search_strategy", type=str, default=None,
+                        choices=["greedy", "phase_aware", "mcts"])
+    parser.add_argument("--search_alpha", type=float, default=None)
 
     # Target model / sampler
     parser.add_argument("--target_model", type=str, default=None)
@@ -70,6 +79,8 @@ def resolve_config() -> Config:
     parser.add_argument("--sample_new_tokens", type=int, default=None)
     parser.add_argument("--sample_full_new_tokens", type=int, default=None)
     parser.add_argument("--sampler_number", type=int, default=None)
+    parser.add_argument("--enable_attack_sampling", type=_parse_bool, default=None)
+
     parser.add_argument("--temperature", type=float, default=None)
     parser.add_argument("--top_p", type=float, default=None)
     parser.add_argument("--top_k", type=int, default=None)
@@ -172,6 +183,8 @@ def resolve_config() -> Config:
         "dynamic_max_prob_threshold",
         "dynamic_entropy_threshold",
         "dynamic_margin_threshold",
+        "search_strategy",
+        "search_alpha",
         "target_model",
         "target_engine_name",
         "target_model_cuda_number",
@@ -183,6 +196,8 @@ def resolve_config() -> Config:
         "sample_new_tokens",
         "sample_full_new_tokens",
         "sampler_number",
+        "enable_attack_sampling",
+
         "temperature",
         "top_p",
         "top_k",
@@ -240,6 +255,13 @@ def resolve_config() -> Config:
     ]
     for field in direct_fields:
         set_if_provided(field)
+
+    # prompt_indices: comma-separated string -> list[int]
+    if "prompt_indices" in provided and args.prompt_indices is not None:
+        config.prompt_indices = [int(x.strip()) for x in args.prompt_indices.split(",")]
+
+    # benchmark_path: override workload benchmark path
+    set_if_provided("benchmark_path")
 
     # Backward compatibility: old CLI flag name.
     if "enable_topk_optimization" not in provided:

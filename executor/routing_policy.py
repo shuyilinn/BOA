@@ -14,6 +14,14 @@ class RoutingPolicy:
 
     def __init__(self, config: Any):
         self.config = config
+        # Per-layer judgment counters (int increments only, negligible overhead)
+        self.judgment_summary: Dict[str, Dict[str, int]] = {}
+
+    def get_judgment_summary(self) -> Dict[str, Dict[str, int]]:
+        return self.judgment_summary
+
+    def reset_judgment_summary(self) -> None:
+        self.judgment_summary = {}
 
     def get_workload_config(self) -> Dict[str, Any]:
         workload_name = str(getattr(self.config, "workload_name", "") or "")
@@ -36,6 +44,7 @@ class RoutingPolicy:
         result: Dict[str, Any],
         make_success_payload_fn: Callable[..., dict],
         exit_reason: str,
+        response_tau: Optional[float] = None,
     ) -> dict:
         return make_success_payload_fn(
             node=node,
@@ -44,6 +53,7 @@ class RoutingPolicy:
             layer3_score=result.get("layer3_score"),
             layer4_score=result.get("layer4_score"),
             exit_reason=exit_reason,
+            response_tau=response_tau,
         )
 
     def apply_judge_batch_result(
@@ -69,10 +79,25 @@ class RoutingPolicy:
         # Persist judged sample score in cache.
         for task, result in zip(tasks, results):
             node = task.node
-            node.scores.append(float(result["score"]))
+            node.add_score(float(result["score"]))
+            # ~32 bytes per judgment: tiny snapshot for offline analysis
+            if "judger_results" not in node.metadata:
+                node.metadata["judger_results"] = []
+            node.metadata["judger_results"].append({
+                "layer": result.get("layer"),
+                "is_safe": result.get("is_safe"),
+                "score": result.get("score"),
+                "action": result.get("action"),
+                "text": task.seq_text or "",
+            })
+            # Per-layer counter (int increment)
+            layer_key = str(result.get("layer", -1))
+            entry = self.judgment_summary.setdefault(layer_key, {"safe": 0, "unsafe": 0, "total": 0})
+            entry["total"] += 1
+            entry["safe" if result.get("is_safe") else "unsafe"] += 1
             touched_nodes[id(node)] = node
             if self.config.enable_sampling_cache:
-                cache.add(task.seq_ids, float(result["score"]))
+                cache.add(task.seq_ids, float(result["score"]), complete=task.is_complete, tau=getattr(task, "response_tau", None), text=task.seq_text or "")
             if self.is_terminal_unsafe(result):
                 logger.warning(
                     "!!! TERMINAL UNSAFE HIT: node=%s layer=%s score=%.2f !!!",
@@ -85,6 +110,7 @@ class RoutingPolicy:
                     result=result,
                     make_success_payload_fn=make_success_payload_fn,
                     exit_reason="unsafe_detected_tree_search",
+                    response_tau=getattr(task, "response_tau", None),
                 )
 
         for node in touched_nodes.values():
@@ -111,5 +137,6 @@ class RoutingPolicy:
                     result=expand_result,
                     make_success_payload_fn=make_success_payload_fn,
                     exit_reason="unsafe_detected_tree_search",
+                    response_tau=getattr(expand_task, "response_tau", None),
                 )
         return None

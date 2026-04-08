@@ -8,6 +8,7 @@ Output shape:
 
 from __future__ import annotations
 
+import ast
 import json
 import logging
 import re
@@ -91,7 +92,14 @@ def _load_system_prompts_from_baseapi(baseapi_path: Path) -> Dict[str, str]:
 
     # Match assignments like: self.xxx = """..."""
     matches = re.findall(r'self\.(\w+)\s*=\s*"""(.*?)"""', text, flags=re.DOTALL)
-    by_attr: Dict[str, str] = {name: body for name, body in matches}
+    by_attr: Dict[str, str] = {}
+    for name, body in matches:
+        # The regex captures raw source text; evaluate Python escape sequences
+        # (e.g. \\" in source → \" in the actual string value).
+        try:
+            by_attr[name] = ast.literal_eval('"""' + body + '"""')
+        except (ValueError, SyntaxError):
+            by_attr[name] = body
 
     prompts: Dict[str, str] = {}
     for variant, attr in _VARIANT_ATTR.items():
@@ -224,10 +232,15 @@ def adapt_agent_safetybench_samples(
             tool_item["type"] = "object"  # Keep parity with Agent-SafetyBench eval.py
             tools_openai.append({"type": "function", "function": tool_item})
 
+        # Match Agent-SafetyBench Llama3API.get_system_prompt(): when no tools
+        # are provided, use a simple system prompt instead of the full tool-calling one.
+        has_tools = any(str(env.get("name", "")) for env in envs)
+        effective_sys_prompt = system_prompt if has_tools else "You are a helpful assistant"
+
         if isinstance(dialog, list) and dialog:
-            messages = [{"role": "system", "content": system_prompt}] + dialog
+            messages = [{"role": "system", "content": effective_sys_prompt}] + dialog
         else:
-            messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": instruction}]
+            messages = [{"role": "system", "content": effective_sys_prompt}, {"role": "user", "content": instruction}]
 
         prompt = build_agent_prompt(messages=messages, tools_openai=tools_openai)
         samples.append(
@@ -237,9 +250,12 @@ def adapt_agent_safetybench_samples(
                 "prompt": prompt,
                 "original_prompt": instruction,
                 "instruction": instruction,
-                "system_prompt": system_prompt,
+                "system_prompt": effective_sys_prompt,
                 "sys_prompt_variant": sys_prompt_variant,
                 "messages": messages,
+                "dialog": dialog,
+                "output": s.get("output"),
+                "sonnet_output": s.get("sonnet_output"),
                 "environments": envs,
                 "tool_schemas": merged_tool_schemas,
                 "tools_openai": tools_openai,

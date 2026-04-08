@@ -12,6 +12,8 @@ from utils.run_naming import build_log_file_path, build_run_id
 
 def main():
     cfg = resolve_config()
+    import torch
+    torch.cuda.set_device(cfg.target_model_cuda_number)
     run_id = build_run_id(cfg)
     setattr(cfg, "run_id", run_id)
     log_file = build_log_file_path(cfg, run_id=run_id)
@@ -45,13 +47,18 @@ def main():
         logger.info("Loaded %s benign prompts from %s", len(benign_prompts), cfg.benign_path)
 
     workload_config = cfg.workload_configs[cfg.workload_name]
-    harmful_path = workload_config["benchmark_path"]
+    harmful_path = cfg.benchmark_path if cfg.benchmark_path else workload_config["benchmark_path"]
     harmful_data = load_harmful_prompts(harmful_path)
     harmful_samples = harmful_data["samples"]
     start = int(cfg.harmful_prompt_start)
     end = cfg.harmful_prompt_end
     end_idx = None if end is None or int(end) == -1 else int(end)
     harmful_samples = harmful_samples[start - 1 : end_idx]
+    # Filter by specific prompt indices if provided (1-based, applied after start/end slicing)
+    if cfg.prompt_indices:
+        target_set = set(cfg.prompt_indices)
+        harmful_samples = [s for i, s in enumerate(harmful_samples, start=start) if i in target_set]
+        logger.info("Filtered to %d prompts by prompt_indices: %s", len(harmful_samples), cfg.prompt_indices)
     harmful_prompts = [s["prompt"] for s in harmful_samples]
     original_prompts = [s["original_prompt"] for s in harmful_samples]
     logger.info(
@@ -125,14 +132,33 @@ def main():
             "tools_openai": sample.get("tools_openai", []),
             "fulfillable": sample.get("fulfillable"),
         }
+        if "dialog" in sample:
+            prompt_metadata["dialog"] = sample["dialog"]
         logger.info(f"Start running prompt: {harmful_prompt}")
-        executor.run(
-            harmful_prompt,
-            original_prompt,
-            prompt_metadata=prompt_metadata,
-            prompt_index=prompt_index,
-            total_prompts=total_prompts,
-        )
+        for attempt in range(2):
+            try:
+                executor.run(
+                    harmful_prompt,
+                    original_prompt,
+                    prompt_metadata=prompt_metadata,
+                    prompt_index=prompt_index,
+                    total_prompts=total_prompts,
+                )
+                break
+            except Exception as e:
+                logger.error(
+                    "Prompt %d/%d attempt %d failed: %s",
+                    prompt_index, total_prompts, attempt + 1, e,
+                )
+                try:
+                    executor.local_judger_engine.reinitialize()
+                except Exception as reinit_err:
+                    logger.error("Judge engine reinit failed: %s", reinit_err)
+                if attempt == 1:
+                    logger.error(
+                        "Skipping prompt %d/%d after 2 failures",
+                        prompt_index, total_prompts,
+                    )
     logger.info("Experiment finished")
 
 

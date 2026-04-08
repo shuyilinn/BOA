@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from boa_types.tree_node import NodeSource
+from boa_types.tree_node import NodeRole
 
 if TYPE_CHECKING:
     from boa_types.tree_node import TreeNode
@@ -15,10 +15,9 @@ META_AWAITING_ENVIRONMENT = "awaiting_environment"
 
 @dataclass
 class EnvironmentFeedback:
-    source: NodeSource
+    role: NodeRole
     text: str
-    token_ids: List[int]
-    role: Optional[str] = None
+    token_ids: List[int] = field(default_factory=list)
     log_prob: float = 0.0
     metadata: Dict[str, Any] = field(default_factory=dict)
 

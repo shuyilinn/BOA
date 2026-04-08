@@ -1,3 +1,4 @@
+"""Minimum reproducibility test — mock engines, no model download needed."""
 from __future__ import annotations
 
 import logging
@@ -5,47 +6,34 @@ import shlex
 import subprocess
 import sys
 import time
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%H:%M:%S",
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
 
 GREEN = "\033[92m"
 RED = "\033[91m"
 RESET = "\033[0m"
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONFIG — only edit here
+# ═══════════════════════════════════════════════════════════════════════════════
 
-@dataclass(frozen=True)
-class SweepConfig:
-    workload_name: str
-    target_model: str
-    top_p: float
-    top_k: int
-    temperature: float
-    likelihood: float
-    harmful_prompt_start: int
-    harmful_prompt_end: int
-    logger_mode: str = "warning"
-    use_dynamic_batch_size: bool = True
-    chunk_size: int = 1
-    chunk_width: int = 100
+SHARED = dict(
+    target_engine_name="mock",
+    judger_engine_name="mock",
+    target_model_cuda_number=0,
+    judger_cuda_number=0,
+    use_dynamic_batch_size="false",
+    logger_mode="warning",
+    mock_sampler_sleep_sec=0,
+    mock_judger_sleep_sec=0,
+    test_mode="true",
+)
 
-
-# Demo uses mock engines only (minimum reproducibility, no model download required).
-TARGET_ENGINE_NAME = "mock"
-JUDGER_ENGINE_NAME = "mock"
-TARGET_MODEL_CUDA_NUMBER = 0
-JUDGER_CUDA_NUMBER = 0
-
-DEMO_CONFIGS: List[SweepConfig] = [
-    SweepConfig(
+TASKS = [
+    dict(
         workload_name="single_turn",
         target_model="mock-target",
         top_p=0.95,
@@ -54,132 +42,62 @@ DEMO_CONFIGS: List[SweepConfig] = [
         likelihood=0.0001,
         harmful_prompt_start=1,
         harmful_prompt_end=1,
-        use_dynamic_batch_size=False,
         chunk_size=1,
         chunk_width=20,
-    )
+        time_limit_sec=2,
+    ),
 ]
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Runner — no need to edit below
+# ═══════════════════════════════════════════════════════════════════════════════
 
-def _build_cmd(cfg: SweepConfig, root_dir: Path) -> List[str]:
-    return [
-        sys.executable,
-        str(root_dir / "run.py"),
-        "--workload_name",
-        cfg.workload_name,
-        "--target_model",
-        cfg.target_model,
-        "--target_engine_name",
-        TARGET_ENGINE_NAME,
-        "--judger_engine_name",
-        JUDGER_ENGINE_NAME,
-        "--top_p",
-        str(cfg.top_p),
-        "--top_k",
-        str(cfg.top_k),
-        "--temperature",
-        str(cfg.temperature),
-        "--likelihood",
-        str(cfg.likelihood),
-        "--logger_mode",
-        cfg.logger_mode,
-        "--target_model_cuda_number",
-        str(TARGET_MODEL_CUDA_NUMBER),
-        "--judger_cuda_number",
-        str(JUDGER_CUDA_NUMBER),
-        "--use_dynamic_batch_size",
-        str(cfg.use_dynamic_batch_size).lower(),
-        "--harmful_prompt_start",
-        str(cfg.harmful_prompt_start),
-        "--harmful_prompt_end",
-        str(cfg.harmful_prompt_end),
-        "--chunk_size",
-        str(cfg.chunk_size),
-        "--chunk_width",
-        str(cfg.chunk_width),
-        "--time_limit_sec",
-        "2",
-        "--mock_sampler_sleep_sec",
-        "0",
-        "--mock_judger_sleep_sec",
-        "0",
-        "--test_mode",
-        "true",
-    ]
+def _build_cmd(task: dict, root_dir: Path) -> list[str]:
+    merged = {**SHARED, **task}
+    cmd = [sys.executable, str(root_dir / "run.py")]
+    for k, v in merged.items():
+        cmd.extend([f"--{k}", str(v)])
+    return cmd
 
 
-def _task_name(cfg: SweepConfig, task_id: int) -> str:
-    model_short = cfg.target_model.replace("/", "_")
-    batch_suffix = "_dynbon" if cfg.use_dynamic_batch_size else "_dynboff"
-    return (
-        f"{task_id:03d}_{cfg.workload_name}_{model_short}_mock"
-        f"_p{cfg.top_p}_k{cfg.top_k}_t{cfg.temperature}"
-        f"_lh{cfg.likelihood}_h{cfg.harmful_prompt_start}-{cfg.harmful_prompt_end}"
-        f"_cs{cfg.chunk_size}_cw{cfg.chunk_width}_log{cfg.logger_mode}{batch_suffix}"
-    )
+def run_task(task_id: int, task: dict, root_dir: Path, logs_dir: Path, run_ts: str) -> int:
+    command = _build_cmd(task, root_dir)
+    model_short = task["target_model"].replace("/", "_")
+    log_path = logs_dir / f"{run_ts}_{task_id:03d}_{model_short}.log"
 
-
-def run_task(task_id: int, cfg: SweepConfig, root_dir: Path, logs_dir: Path, run_timestamp: str) -> int:
-    task_name = _task_name(cfg, task_id)
-    log_path = logs_dir / f"{run_timestamp}_{task_name}.log"
-    command = _build_cmd(cfg, root_dir)
-    cmd_str = shlex.join(command)
-
-    logger.info("[START] Task %s (%s)", task_id, task_name)
-    logger.info("[COMMAND] %s", cmd_str)
-
+    logger.info("[START] Task %d: %s", task_id, task["target_model"])
+    logger.info("[CMD] %s", shlex.join(command))
     with log_path.open("a", encoding="utf-8", buffering=1) as lf:
-        lf.write("\n" + "=" * 80 + "\n")
-        lf.write(f"[{datetime.utcnow().isoformat()}Z] [START] Task {task_id} ({task_name})\n")
-        lf.write(f"[COMMAND] {cmd_str}\n")
-        lf.write("=" * 80 + "\n")
+        lf.write(f"[{datetime.utcnow().isoformat()}Z] {shlex.join(command)}\n")
+        rc = subprocess.Popen(command, cwd=root_dir, stdout=lf, stderr=lf, text=True).wait()
+        lf.write(f"[{datetime.utcnow().isoformat()}Z] exit_code={rc}\n")
 
-        proc = subprocess.Popen(
-            command,
-            cwd=root_dir,
-            stdout=lf,
-            stderr=lf,
-            text=True,
-        )
-        return_code = proc.wait()
-
-        lf.write(
-            f"[{datetime.utcnow().isoformat()}Z] [END] Task {task_id} ({task_name}) exit_code={return_code}\n"
-        )
-        lf.write("=" * 80 + "\n")
-
-    if return_code != 0:
-        logger.warning("Task %s failed, exit_code=%s, log=%s", task_id, return_code, log_path)
+    if rc != 0:
+        logger.warning("Task %d FAILED (exit=%d) log=%s", task_id, rc, log_path)
     else:
-        logger.info("Task %s completed", task_id)
-    return int(return_code)
+        logger.info("Task %d done", task_id)
+    return rc
 
 
 if __name__ == "__main__":
     root = Path(__file__).resolve().parent.parent
     logs_dir = root / "experiment" / "logs"
     logs_dir.mkdir(parents=True, exist_ok=True)
+    run_ts = datetime.now().strftime("%Y%m%d-%H%M%S")
 
-    run_timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    logger.info("Total demo tasks: %s", len(DEMO_CONFIGS))
-
-    all_passed = True
-    for i, cfg in enumerate(DEMO_CONFIGS, start=1):
-        code = run_task(i, cfg, root, logs_dir, run_timestamp)
-        if code != 0:
-            all_passed = False
+    logger.info("Tasks: %d", len(TASKS))
+    failed = False
+    for i, task in enumerate(TASKS, 1):
+        if run_task(i, task, root, logs_dir, run_ts) != 0:
+            failed = True
         time.sleep(1)
 
-    if all_passed:
-        logger.info("=" * 72)
-        logger.info("%sMINIMUM REPRODUCIBILITY TEST: PASSED%s", GREEN, RESET)
-        logger.info("%sStatus: minimum test passed%s", GREEN, RESET)
-        logger.info("=" * 72)
-    else:
+    if failed:
         logger.error("=" * 72)
         logger.error("%sMINIMUM REPRODUCIBILITY TEST: FAILED%s", RED, RESET)
-        logger.error("%sStatus: minimum test failed%s", RED, RESET)
         logger.error("=" * 72)
         raise SystemExit(1)
 
-    logger.info("Demo run finished.")
+    logger.info("=" * 72)
+    logger.info("%sMINIMUM REPRODUCIBILITY TEST: PASSED%s", GREEN, RESET)
+    logger.info("=" * 72)

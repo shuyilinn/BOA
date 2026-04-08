@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Any, Dict
 import threading
 from boa_types.tree_node import TreeNode
+from utils.conversation_formatter import build_node_model_input
 
 @dataclass
 class BufferItem:
@@ -11,8 +12,8 @@ class BufferItem:
 
     Field semantics:
     - `path_text` / `path_ids`:
-      Full node path context (includes prompt/root prefix + all incremental chunks to this node).
-      These are built from `TreeNode.get_path_text()` / `TreeNode.get_path_token_ids()`.
+      Full context fed to the LLM for this sampling request.
+      Built on demand from the node's conversation state or legacy tree path.
     - `seq_text` / `seq_ids`:
       Generated sample for THIS sampling request.
       `seq_text` is incremental generated text only (does not include prompt/path_text).
@@ -24,22 +25,26 @@ class BufferItem:
       Extra metadata needed by the judger, such as tool schemas and environment info.
     - `original_prompt`:
       Raw user request without chat template. Kept for logging and reporting.
-    - `prompt_with_chat_template`:
-      Prompt text after chat template is applied. Used to strip prompt from full responses.
     - `node`:
       Back-reference to source TreeNode for appending scores / queue routing.
     """
     node: Any
     path_text: str
     path_ids: List[int]
+    base_generated_len: int = 0
     judger_prompt: Optional[str] = None
     judger_metadata: Dict[str, Any] | None = None
     original_prompt: Optional[str] = None
-    prompt_with_chat_template: Optional[str] = None
+    # Snapshot of the node's assistant text at enqueue time.
+    # This is the immutable base for response reconstruction — JudgeWorker
+    # concatenates this with seq_text instead of reading live node state.
+    node_assistant_text: str = ""
     seq_text: Optional[str] = None   # Filled by Sampler
     seq_ids: Optional[List[int]] = None
     seq_new_ids: Optional[List[int]] = None
+    is_complete: bool = False         # True if generation ended with EOS (not max-length truncated)
     score: Optional[float] = None
+    response_tau: Optional[float] = None  # Cumulative log-prob of generated tokens (from sampler tau)
 
 class Buffer:
     def __init__(self, capacity: int = 10000):
@@ -53,10 +58,11 @@ class Buffer:
         self,
         node: TreeNode,
         num_needed: int,
+        tokenizer: Any,
+        model_name: str = "",
         judger_prompt: Optional[str] = None,
         judger_metadata: Optional[Dict[str, Any]] = None,
         original_prompt: Optional[str] = None,
-        prompt_with_chat_template: Optional[str] = None,
     ) -> bool:
         """
         Expand one node into N BufferItems.
@@ -65,19 +71,25 @@ class Buffer:
         to_add = max(0, int(num_needed or 0))
         if to_add <= 0:
             return len(self) >= self.capacity
-        # Path context is identical for all requests of the same node.
-        path_text = node.get_path_text()
-        path_ids = node.get_path_token_ids()
+        path_text, path_ids, base_generated_len = build_node_model_input(
+            node,
+            tokenizer,
+            model_name=model_name,
+        )
+        # Snapshot assistant text now so judger reads a frozen value,
+        # not live node state that could theoretically change later.
+        assistant_text_snapshot = node.conversation_state.latest_assistant_text()
         with self._lock:
             for _ in range(to_add):
                 item = BufferItem(
                     node=node,
                     path_text=path_text,
                     path_ids=path_ids,
+                    base_generated_len=base_generated_len,
+                    node_assistant_text=assistant_text_snapshot,
                     judger_prompt=judger_prompt,
                     judger_metadata=dict(judger_metadata or {}),
                     original_prompt=original_prompt,
-                    prompt_with_chat_template=prompt_with_chat_template,
                 )
                 self._queue.append(item)
             return len(self._queue) >= self.capacity

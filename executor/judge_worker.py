@@ -10,6 +10,7 @@ from judgers.base_judger import PipelineJudger
 from sampler.sampler import Sampler
 from utils.batch_policy import RuntimeOOMBatchRunner
 from utils.logger import setup_logger
+from profiler import profile
 
 logger = setup_logger("JudgeWorker")
 
@@ -45,12 +46,27 @@ class JudgeWorker:
         self._oom_runner: RuntimeOOMBatchRunner | None = None
         self._expand_oom_runner: RuntimeOOMBatchRunner | None = None
 
+    def reset_oom_runner(self) -> None:
+        """Reset OOM runner batch sizes to initial value (call at prompt boundaries)."""
+        if self._oom_runner is not None:
+            self._oom_runner.reset()
+        if self._expand_oom_runner is not None:
+            self._expand_oom_runner.reset()
+
+    @profile("judger.flush_once")
     def flush_once(
         self,
         judging_buffer: Buffer,
         batch_size: int,
         node_brief_fn: Callable[[Any], str],
     ) -> JudgeBatchResult:
+        """
+        Pop tasks from judging_buffer and run two-stage judging:
+          Stage 1: Layer 1-3 fast evaluation on short (truncated) responses.
+          Stage 2: For layer-3 high-scorers that were truncated (not EOS),
+                   expand to full response and run layer-4 evaluation.
+        """
+        # --- OOM-aware batch size ---
         target_bs = max(1, int(batch_size))
         if self._oom_runner is None:
             self._oom_runner = RuntimeOOMBatchRunner(
@@ -75,25 +91,13 @@ class JudgeWorker:
 
         logger.info("Judging flush start: tasks=%s (judging_buffer remaining=%s)", len(tasks), len(judging_buffer))
         results: List[Dict[str, Any]] = []
-        # preview_n = int(getattr(self.config, "logger_judger_preview_n", 3) or 3)
-        # for idx, (task, result) in enumerate(zip(tasks[:preview_n], results[:preview_n]), start=1):
-        #     response_preview = self._build_full_response(task).replace("\n", " ")
-        #     if len(response_preview) > 120:
-        #         response_preview = response_preview[:120] + "..."
-        #     logger.info(
-        #         "Judger item[%s/%s]: node=%s layer=%s safe=%s score=%.2f response='%s'",
-        #         idx,
-        #         len(tasks),
-        #         id(task.node),
-        #         result.get("layer"),
-        #         result.get("is_safe"),
-        #         float(result.get("score", 0.0)),
-        #         response_preview,
-        #     )
 
+        # --- Stage 1: Layer 1-3 evaluation on short responses ---
         def _run_chunk(chunk_tasks: List[BufferItem]) -> List[Dict[str, Any]]:
-            prompts = [task.judger_prompt or task.original_prompt or task.path_text for task in chunk_tasks]
+            prompts = [self._get_judger_prompt(task) for task in chunk_tasks]
             metadatas = [dict(task.judger_metadata or {}) for task in chunk_tasks]
+            for i, task in enumerate(chunk_tasks):
+                metadatas[i]["_full_response"] = self._build_full_response(task)
             responses = [self._build_full_response(task) for task in chunk_tasks]
             logger.info(
                 "Judging chunk: tasks=%s (runtime_batch_size=%s)",
@@ -116,30 +120,16 @@ class JudgeWorker:
         for chunk_results in self._oom_runner.run(tasks, _run_chunk):
             results.extend(chunk_results)
 
+        # --- Stage 2: Expand truncated layer-3 high-scorers and run layer-4 ---
+        # Only expand tasks that were truncated by max_new_tokens (not naturally completed with EOS).
         expand_tasks = []
-        top_hits = []
         for task, result in zip(tasks, results):
-            if result["layer"] == 3 and result["score"] > self.config.layer3_filter_threshold:
+            if result["layer"] == 3 and result["score"] > self.config.layer3_filter_threshold and not task.is_complete:
                 expand_tasks.append(task)
-                top_hits.append((node_brief_fn(task.node), float(result.get("score", 0.0))))
 
         expand_results: List[Dict[str, Any]] = []
         generated_tokens_full_expand = 0
         if expand_tasks:
-            candidates = "; ".join(
-                f"{node_desc} score={score:.2f}" for node_desc, score in top_hits
-            )
-            logger.warning(
-                "!!! LAYER3 HIGH-SCORE CANDIDATES: %s/%s over threshold=%.2f. candidates=[%s] !!!",
-                len(expand_tasks),
-                len(tasks),
-                float(self.config.layer3_filter_threshold),
-                candidates,
-            )
-            logger.warning(
-                "!!! LAYER4 CHECK: sending %s task(s) to full-response judging !!!",
-                len(expand_tasks),
-            )
             expand_results, generated_tokens_full_expand = self._expanding_and_judging(expand_tasks)
 
         logger.info("Judging done: runtime_batch_size=%s", self._oom_runner.batch_size)
@@ -155,18 +145,15 @@ class JudgeWorker:
 
     def _expanding_and_judging(self, tasks: List[BufferItem]) -> Tuple[List[Dict[str, Any]], int]:
         """
-        Expand short responses to full responses and run layer3-4 full-response judging.
+        Continue generating truncated responses to full length, then run layer-4 judging.
+        Called only for truncated tasks (is_complete=False) that scored high in layer-3.
         Returns (results, generated_tokens_in_expand).
         """
-        if not tasks:
-            return [], 0
-
         temperature = self.config.temperature
         top_p = self.config.top_p
-        max_new_tokens = int(self.config.sample_new_tokens)
         top_k = self.config.top_k
-        sample_full_new_tokens = int(self.config.sample_full_new_tokens)
-        extra_new_tokens = sample_full_new_tokens - max_new_tokens
+        # Extra tokens to generate: full budget minus what was already sampled
+        extra_new_tokens = int(self.config.sample_full_new_tokens) - int(self.config.sample_new_tokens)
         initial_expand_bs = int(self._oom_runner.batch_size)
         if self._expand_oom_runner is None:
             self._expand_oom_runner = RuntimeOOMBatchRunner(
@@ -179,35 +166,52 @@ class JudgeWorker:
         generated_tokens_in_expand = 0
 
         def _run_expand_chunk(chunk_tasks: List[BufferItem]) -> Tuple[List[Dict[str, Any]], int]:
-            chunk_prompts = [task.judger_prompt or task.original_prompt or task.path_text for task in chunk_tasks]
+            chunk_prompts = [self._get_judger_prompt(task) for task in chunk_tasks]
             chunk_metadatas = [dict(task.judger_metadata or {}) for task in chunk_tasks]
-            chunk_short_responses = [self._build_full_response(task) for task in chunk_tasks]
-            if extra_new_tokens <= 0:
-                chunk_full_responses = chunk_short_responses
-                chunk_generated_tokens = 0
-            else:
-                seed_ids_batch = [task.seq_ids if task.seq_ids is not None else task.path_ids for task in chunk_tasks]
-                generated_full_ids = self.target_model_engine.batch_generate(
-                    seed_ids_batch,
-                    max_new_tokens=extra_new_tokens,
-                    temperature=temperature,
-                    top_p=top_p,
-                    top_k=top_k,
-                )
-                chunk_full_responses = []
-                chunk_generated_tokens = 0
-                for task, full_ids in zip(chunk_tasks, generated_full_ids):
-                    seed_len = len(task.seq_ids) if task.seq_ids is not None else len(task.path_ids)
-                    extra_ids = full_ids[seed_len:]
-                    chunk_generated_tokens += len(extra_ids)
-                    extra_text = self.sampler.tokenizer.decode(extra_ids) if extra_ids else ""
-                    chunk_full_responses.append(self._build_full_response(task) + extra_text)
+            for i, task in enumerate(chunk_tasks):
+                chunk_metadatas[i]["_full_response"] = self._build_full_response(task)
 
-            chunk_results = self.judger.batch_evaluate_full_response(
-                chunk_prompts,
-                chunk_full_responses,
-                chunk_metadatas,
+            # Step 1: Continue generating from the truncated sequence with tau protection
+            seed_ids_batch = [task.seq_ids if task.seq_ids is not None else task.path_ids for task in chunk_tasks]
+            base_generated_lens = [len(task.seq_new_ids or []) for task in chunk_tasks]
+            new_children_groups, tau_list, tau_invalid_flags = self.sampler.batch_uniform_generate_with_tau(
+                seed_ids_batch,
+                base_generated_lens=base_generated_lens,
+                max_new_tokens=extra_new_tokens,
+                return_tau=True,
+                compute_tau=True,
+                return_invalid_flags=True,
             )
+
+            # Decode extra tokens and build full responses (short response + extended text)
+            # tau-invalid tasks are marked safe and skipped from layer-4 judging.
+            chunk_full_responses = []
+            chunk_generated_tokens = 0
+            valid_indices = []
+            chunk_results: List[Dict[str, Any]] = [{} for _ in chunk_tasks]
+            for i, (task, new_children, tau_invalid) in enumerate(
+                zip(chunk_tasks, new_children_groups, tau_invalid_flags)
+            ):
+                chunk_generated_tokens += len(new_children)
+                if tau_invalid:
+                    chunk_results[i] = {"layer": 3, "score": 0, "is_safe": True, "action": "STOP"}
+                    chunk_full_responses.append("")
+                    logger.info("Expand tau-invalid: skipping layer-4 for task %d", i)
+                else:
+                    extra_text = self.sampler.tokenizer.decode(new_children) if new_children else ""
+                    chunk_full_responses.append(self._build_full_response(task) + extra_text)
+                    valid_indices.append(i)
+
+            # Step 2: Run layer-4 judging only on tau-valid full responses
+            if valid_indices:
+                eval_results = self.judger.batch_evaluate_full_response(
+                    [chunk_prompts[i] for i in valid_indices],
+                    [chunk_full_responses[i] for i in valid_indices],
+                    [chunk_metadatas[i] for i in valid_indices],
+                )
+                for j, idx in enumerate(valid_indices):
+                    chunk_results[idx] = eval_results[j]
+
             return chunk_results, int(chunk_generated_tokens)
 
         for chunk_results, chunk_generated in self._expand_oom_runner.run(tasks, _run_expand_chunk):
@@ -216,10 +220,34 @@ class JudgeWorker:
 
         return all_results, int(generated_tokens_in_expand)
 
+    @staticmethod
+    def _get_judger_prompt(task: BufferItem) -> str:
+        """Return the judger prompt for a task.
+
+        Uses judger_prompt (raw user request) or original_prompt as fallback.
+        Never falls back to path_text — that is the chat-template-wrapped model
+        input and semantically wrong as a judger prompt.
+        """
+        prompt = task.judger_prompt or task.original_prompt
+        assert prompt, (
+            "BufferItem has neither judger_prompt nor original_prompt; "
+            "cannot determine judger prompt. This indicates a bug in buffer "
+            "population — every task must carry an explicit prompt."
+        )
+        return prompt
+
     def _build_full_response(self, task: BufferItem) -> str:
-        # Build full response (path_text + current seq_text) and strip the prompt portion if present.
-        full_with_prompt = (task.path_text or "") + (task.seq_text or "")
-        prompt_with_chat_template = task.prompt_with_chat_template or ""
-        if prompt_with_chat_template and full_with_prompt.startswith(prompt_with_chat_template):
-            return full_with_prompt[len(prompt_with_chat_template):]
-        return full_with_prompt
+        """Build the assistant response text for judging.
+
+        Uses the snapshot taken at buffer-insertion time (task.node_assistant_text)
+        plus any additional tokens generated by the sampler (seq_text).
+        Reading a frozen snapshot instead of live node state enforces the
+        invariant that buffered tasks are not affected by later tree mutations.
+        """
+        assert task.node_assistant_text is not None, (
+            "BufferItem must carry a frozen assistant text snapshot "
+            "(set by Buffer.add_requests at enqueue time). "
+            "A None snapshot indicates the item was constructed outside "
+            "the canonical buffer population path."
+        )
+        return task.node_assistant_text + (task.seq_text or "")

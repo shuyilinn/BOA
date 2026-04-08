@@ -32,11 +32,12 @@ def build_run_id(cfg: Any, timestamp: str | None = None) -> str:
     topk_opt = "on" if bool(cfg.enable_topk_optimization) else "off"
     ref_pat = "on" if bool(cfg.enable_refuse_pattern_matching) else "off"
     ref_judge = "on" if bool(cfg.enable_refuse_judger) else "off"
+    search = _sanitize_for_filename(str(getattr(cfg, "search_strategy", "greedy")))
     flags = f"cache{cache}_sbuf{sbuf}_jbuf{jbuf}_topk{topk_opt}_refPat{ref_pat}_refJudge{ref_judge}"
 
     return (
         f"{ts}_{workload_name}_{model_name}_{engine_name}"
-        f"_p{top_p}_k{top_k}_t{temperature}_lh{likelihood}_cs{chunk_size}_{flags}"
+        f"_p{top_p}_k{top_k}_t{temperature}_lh{likelihood}_cs{chunk_size}_{search}_{flags}"
     )
 
 

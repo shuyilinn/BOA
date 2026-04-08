@@ -8,6 +8,7 @@ from components.buffer.buffer import Buffer, BufferItem
 from sampler.sampler import Sampler
 from utils.batch_policy import RuntimeOOMBatchRunner, get_initial_batch_size
 from utils.logger import setup_logger
+from profiler import profile
 
 logger = setup_logger("SampleWorker")
 
@@ -64,6 +65,17 @@ class SampleWorker:
             logger.info("Sampling batch policy initialized: initial_batch_size=%s", initial_bs)
         return self._oom_runner
 
+    def get_flush_batch_size(self) -> int:
+        """Return the dynamic batch size estimate for use as flush threshold."""
+        oom_runner = self._ensure_oom_runner()
+        return int(oom_runner.batch_size)
+
+    def reset_oom_runner(self) -> None:
+        """Reset OOM runner batch size to initial value (call at prompt boundaries)."""
+        if self._oom_runner is not None:
+            self._oom_runner.reset()
+
+    @profile("sampler.flush_once")
     def flush_once(self, sample_buffer: Buffer, judging_buffer: Buffer) -> SampleBatchResult:
         oom_runner = self._ensure_oom_runner()
         runtime_batch_size = int(oom_runner.batch_size)
@@ -91,32 +103,35 @@ class SampleWorker:
         def _run_chunk(chunk_tasks: List[BufferItem]) -> None:
             nonlocal generated_tokens, pushed, requeued
             sample_tasks_ids = [task.path_ids for task in chunk_tasks]
-            logger.info(
-                "Sampling chunk: tasks=%s (chunk_size=%s)",
-                len(chunk_tasks),
-                len(chunk_tasks),
-            )
-            new_children_groups, tau_invalid_flags = self.sampler.batch_uniform_generate(
+            sample_base_lens = [task.base_generated_len for task in chunk_tasks]
+
+            new_children_groups, tau_list, tau_invalid_flags = self.sampler.batch_uniform_generate_with_tau(
                 sample_tasks_ids,
+                base_generated_lens=sample_base_lens,
+                return_tau=True,
+                compute_tau=True,
                 return_invalid_flags=True,
             )
             generated_tokens += int(sum(len(new_children) for new_children in new_children_groups))
             # tau_invalid only marks failures caused by tau/threshold gating.
-            for task, new_children, tau_invalid in zip(chunk_tasks, new_children_groups, tau_invalid_flags):
+            for task, new_children, tau_val, tau_invalid in zip(chunk_tasks, new_children_groups, tau_list, tau_invalid_flags):
                 if tau_invalid:
                     sample_buffer.add_requests(
                         task.node,
                         1,
+                        self.sampler.tokenizer,
+                        self.sampler.config.target_model or "",
                         judger_prompt=task.judger_prompt,
                         judger_metadata=task.judger_metadata,
                         original_prompt=task.original_prompt,
-                        prompt_with_chat_template=task.prompt_with_chat_template,
                     )
                     requeued += 1
                     continue
                 task.seq_new_ids = new_children
                 task.seq_ids = task.path_ids + new_children
                 task.seq_text = self.sampler.tokenizer.decode(new_children)
+                task.is_complete = len(new_children) < self.sampler.config.sample_new_tokens
+                task.response_tau = tau_val
                 judging_buffer.add_item(task)
                 pushed += 1
 

@@ -30,6 +30,8 @@ def extract_mem_info_from_config(
     """
     Map config -> ModelMemInfo. Works with HF config, vLLM hf_config, or any config with same attribute names.
     """
+    config = getattr(config, "text_config", None) or config
+
     num_layers = int(config.num_hidden_layers)
     hidden_size = int(config.hidden_size)
     num_heads = int(config.num_attention_heads)
@@ -179,7 +181,7 @@ def estimate_batch_size_from_current_free_vram(
 
     free_bytes, _ = torch.cuda.mem_get_info(device_index)
 
-    util = max(0.05, min(float(gpu_memory_utilization), 0.99))
+    util = max(0.05, float(gpu_memory_utilization))
     bytes_available = int(free_bytes * util)
 
     model_obj = model if model is not None else getattr(engine, "model", None)

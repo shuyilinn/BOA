@@ -100,7 +100,11 @@ def load_harmful_prompts(path: str) -> Dict[str, Any]:
         logger.info("Detected Agent-SafetyBench by json filename. Adapting to BOA sample format...")
         return adapt_agent_safetybench_samples(samples)
 
-    # --- 3. Validate and keep full sample dict ---
+    # --- 3. Normalize field aliases and validate ---
+    for s in samples:
+        if "original_prompt" not in s and "orig_prompt" in s:
+            s["original_prompt"] = s["orig_prompt"]
+
     validated_samples = []
     for i, s in enumerate(samples):
         if "id" not in s:
