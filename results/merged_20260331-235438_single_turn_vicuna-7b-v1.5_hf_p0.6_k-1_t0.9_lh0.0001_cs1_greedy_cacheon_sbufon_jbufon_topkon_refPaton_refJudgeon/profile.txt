@@ -1,0 +1,28 @@
+Profile session: 20260329-185650_single_turn_vicuna-7b-v1.5_hf_p0.6_k-1_t0.9_lh0.0001_cs1_greedy_cacheon_sbufon_jbufon_topkon_refPaton_refJudgeon
+-------------------------------------------------------------------------------------------------------------------------
+Function                                      Calls    Total(s)     Self(s)     Self%     Mean(s)      Min(s)      Max(s)
+-------------------------------------------------------------------------------------------------------------------------
+sampler.generate                                  1      20.372       0.024      0.1%      20.372      20.372      20.372
+├── sampler.engine.forward_step                 507      10.479       0.022      0.1%       0.021       0.018       0.047
+│   └── sampler.engine.model_forward                507      10.457      10.457     51.3%       0.021       0.018       0.046
+├── sampler.sample_step                         507       9.221       0.051      0.3%       0.018       0.001       0.026
+│   ├── sampler.nonzero_sync                        507       8.785       8.785     43.1%       0.017       0.000       0.026
+│   ├── sampler.top_p_k_subset                      507       0.133       0.133      0.7%       0.000       0.000       0.000
+│   ├── sampler.multinomial                         507       0.062       0.062      0.3%       0.000       0.000       0.000
+│   ├── sampler.logsumexp_base                      507       0.039       0.039      0.2%       0.000       0.000       0.000
+│   ├── sampler.tau_mask                            500       0.038       0.038      0.2%       0.000       0.000       0.000
+│   ├── sampler.logsumexp_scaled                    507       0.036       0.036      0.2%       0.000       0.000       0.000
+│   ├── sampler.gather_logprob                      507       0.029       0.029      0.1%       0.000       0.000       0.000
+│   ├── sampler.tau_gate                            507       0.018       0.018      0.1%       0.000       0.000       0.000
+│   ├── sampler.index_select                        507       0.018       0.018      0.1%       0.000       0.000       0.000
+│   ├── sampler.prepare_logits                      507       0.007       0.007      0.0%       0.000       0.000       0.000
+│   └── sampler.apply_smoothing                     507       0.003       0.003      0.0%       0.000       0.000       0.000
+├── sampler.generate.smoothing                  507       0.423       0.423      2.1%       0.001       0.000       0.150
+├── sampler.generate.tau_update                 507       0.104       0.104      0.5%       0.000       0.000       0.000
+├── sampler.generate.batch_update               507       0.081       0.081      0.4%       0.000       0.000       0.000
+├── sampler.generate.prepare_tau                507       0.022       0.022      0.1%       0.000       0.000       0.000
+├── sampler.generate.shrink_batch               506       0.014       0.014      0.1%       0.000       0.000       0.001
+├── sampler.generate.assemble_results             1       0.003       0.003      0.0%       0.003       0.003       0.003
+└── sampler.generate.init                         1       0.001       0.000      0.0%       0.001       0.001       0.001
+    └── sampler.prepare_inputs                        1       0.001       0.001      0.0%       0.001       0.001       0.001
+-------------------------------------------------------------------------------------------------------------------------

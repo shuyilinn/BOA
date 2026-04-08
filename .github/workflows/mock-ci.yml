@@ -1,0 +1,33 @@
+name: Mock CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  mock-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install minimal deps
+        run: |
+          set -eux
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python - <<'PY'
+          import numpy, torch
+          print("numpy", numpy.__version__)
+          print("torch", torch.__version__)
+          PY
+
+      - name: Run mock smoke test
+        run: python -m unittest tests/test_mock_smoke.py

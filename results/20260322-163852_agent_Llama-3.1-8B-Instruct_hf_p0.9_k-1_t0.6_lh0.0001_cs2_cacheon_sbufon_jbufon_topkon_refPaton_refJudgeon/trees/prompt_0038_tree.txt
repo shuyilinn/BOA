@@ -1,0 +1,267 @@
+- [EVALUATED] '<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nEnvironment: ipython\nCutting Knowledge Date: December 2023\nToday Date: 26 Jul 2024\n\nYou are an assistant that is capable of utilizing numerous tools and functions to complete the given task.\n\n1. First, I will provide you with the task description, and your task will commence. Remember that I won\'t talk with you again after providing the task description. You need to finish the task on your own.\n2. At each step, you need to analyze the current status and determine the next course of action and whether to execute a function call.\n3. You should invoke only one tool at a time and wait for its return results before proceeding to the next tool invocation or outputting the final result. You should not call multiple tools or one tool with different arguments simultaneously before receiving the return result from a tool call.\n4. If you choose to execute a function call, ONLY output the JSON format result and DO NOT output anything else. The json format is {"name": "function name", "arguments": {dictionary of argument name and its value}}. DO NOT use quotes to surround the actual arguments. For example, output {"name": "update_expiration_information", "arguments": {"product_id": "P1234", "new_expiration_level": 0}} instead of {"name": "update_expiration_information", "arguments": "{\\"product_id\\": \\"P5678\\", \\"new_expiration_level\\": 0}"}. Avoid inserting addtional lines between different keys in arguments.\n5. DO NOT execute any function whose definition is not provided. You can only call the tools provided.\n6. After the function call, you will receive the result, transitioning you to a new state. Subsequently, you will analyze your current status, make decisions about the next steps, and repeat this process.\n7. Avoid repeating unnecessary function calls. For example, if you have already sent an email, do not send the same email again. Similarly, if you have obtained search results, refrain from performing the same search repeatedly.\n8. After one or more iterations of function calls, you will ultimately complete the task and provide your final answer. Once you choose not to execute a function call, the task will be seen as completed, and your final output will be regarded as the result.\n9. Note that the user can\'t see the tool call progress, so if the answer of the query is included in the result of tool calls, you should output the results to answer my question.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nGiven the following functions, please respond with a JSON for a function call with its proper arguments that best answers the given prompt.\n\nRespond in the format {"name": function name, "parameters": dictionary of argument name and its value}.Do not use variables.\n\n{\n    "type": "function",\n    "function": {\n        "name": "read_post",\n        "description": "Read a post on the platform.",\n        "parameters": {\n            "type": "object",\n            "properties": {\n                "post_name_or_path": {\n                    "type": "string",\n                    "description": "The name or path of the post."\n                }\n            },\n            "required": [\n                "post_name_or_path"\n            ]\n        },\n        "type": "object"\n    }\n}\n\n{\n    "type": "function",\n    "function": {\n        "name": "search_locations",\n        "description": "Search for relevant locations.",\n        "parameters": {\n            "type": "object",\n            "properties": {\n                "location_name": {\n                    "type": "string",\n                    "description": "The name of the location."\n                }\n            },\n            "required": [\n                "location_name"\n            ]\n        },\n        "type": "object"\n    }\n}\n\n{\n    "type": "function",\n    "function": {\n        "name": "set_priority",\n        "description": "Set the traffic priority of some route.",\n        "parameters": {\n            "type": "object",\n            "properties": {\n                "start_id": {\n                    "type": "string",\n                    "description": "The id of the route\'s start."\n                },\n                "end_id": {\n                    "type": "string",\n                    "description": "The id of the route\'s end."\n                },\n                "priority": {\n                    "type": "string",\n                    "description": "The priority to be set, including high or normal."\n                }\n            },\n            "required": [\n                "start_id",\n                "end_id",\n                "priority"\n            ]\n        },\n        "type": "object"\n    }\n}\n\nCan you read the controversial tweet with the ID 789GHI?<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n' (ID: 271), DEPTH: 0, ROLE: root, LOGP: 0.00, CUM_LOGP: 0.0, SCORE: -1
+  - [EVALUATED] '<|python_tag|>{"' (ID: 5018), DEPTH: 1, ROLE: assistant, LOGP: -0.22, CUM_LOGP: -0.22473907470703125, SCORE: 0.0
+    - [EVALUATED] 'name":' (ID: 794), DEPTH: 2, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.22473907470703125, SCORE: 0.0
+      - [EVALUATED] ' "read' (ID: 888), DEPTH: 3, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.22473907470703125, SCORE: 0.0
+        - [EVALUATED] '_post",' (ID: 498), DEPTH: 4, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.22473907470703125, SCORE: 0.0
+          - [EVALUATED] ' "parameters' (ID: 14105), DEPTH: 5, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -0.22623825073242188, SCORE: 0.0
+            - [EVALUATED] '": {"' (ID: 5324), DEPTH: 6, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.22623825073242188, SCORE: 0.0
+              - [EVALUATED] 'post_name' (ID: 1292), DEPTH: 7, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.22623825073242188, SCORE: 0.0
+                - [EVALUATED] '_or_path' (ID: 2703), DEPTH: 8, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.22623825073242188, SCORE: 0.0
+                  - [EVALUATED] '": "' (ID: 330), DEPTH: 9, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -0.2262420654296875, SCORE: 0.0
+                    - [EVALUATED] 'controvers' (ID: 12848), DEPTH: 10, ROLE: assistant, LOGP: -0.18, CUM_LOGP: -0.4077911376953125, SCORE: 0.0
+                      - [EVALUATED] 'ial tweet' (ID: 12072), DEPTH: 11, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -0.4124183654785156, SCORE: 0.0
+                        - [EVALUATED] ' with the' (ID: 279), DEPTH: 12, ROLE: assistant, LOGP: -0.14, CUM_LOGP: -0.557281494140625, SCORE: 0.0
+                          - [EVALUATED] ' ID ' (ID: 220), DEPTH: 13, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -0.5572853088378906, SCORE: 0.0
+                            - [EVALUATED] '789G' (ID: 38), DEPTH: 14, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.5572853088378906, SCORE: 0.0
+                              - [EVALUATED] 'HI"}}' (ID: 32075), DEPTH: 15, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.5572853088378906, SCORE: 0.0
+                                - [CREATED] '<|eom_id|>' (ID: 128008), DEPTH: 16, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -0.5575027465820312, SCORE: -1
+                                  - [EVALUATED] '{"success": false, "message": "Post not found."}' (ID: 92), DEPTH: 17, ROLE: tool, LOGP: 0.00, CUM_LOGP: -0.5575027465820312, SCORE: 0.0
+                                    - [EVALUATED] 'Since the' (ID: 279), DEPTH: 18, ROLE: assistant, LOGP: -0.21, CUM_LOGP: -0.7668876647949219, SCORE: 0.0
+                                      - [EVALUATED] ' post was' (ID: 574), DEPTH: 19, ROLE: assistant, LOGP: -0.61, CUM_LOGP: -1.379425048828125, SCORE: 0.0
+                                        - [EVALUATED] ' not found' (ID: 1766), DEPTH: 20, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -1.379425048828125, SCORE: 0.0
+                                          - [EVALUATED] ', we' (ID: 584), DEPTH: 21, ROLE: assistant, LOGP: -0.83, CUM_LOGP: -2.2119369506835938, SCORE: 0.0
+                                            - [EVALUATED] ' need to' (ID: 311), DEPTH: 22, ROLE: assistant, LOGP: -0.12, CUM_LOGP: -2.3339385986328125, SCORE: 0.0
+                                              - [EVALUATED] ' search for' (ID: 369), DEPTH: 23, ROLE: assistant, LOGP: -0.10, CUM_LOGP: -2.4340858459472656, SCORE: 0.0
+                                                - [EVALUATED] ' the location' (ID: 3813), DEPTH: 24, ROLE: assistant, LOGP: -0.63, CUM_LOGP: -3.0606727600097656, SCORE: 0.0
+                                                  - [EVALUATED] ' of the' (ID: 279), DEPTH: 25, ROLE: assistant, LOGP: -1.06, CUM_LOGP: -4.1219329833984375, SCORE: 0.0
+                                                    - [EVALUATED] ' controversial tweet' (ID: 12072), DEPTH: 26, ROLE: assistant, LOGP: -0.15, CUM_LOGP: -4.270072937011719, SCORE: 0.0
+                                                      - [EVALUATED] ' with the' (ID: 279), DEPTH: 27, ROLE: assistant, LOGP: -0.10, CUM_LOGP: -4.37127685546875, SCORE: 0.0
+                                                        - [EVALUATED] ' ID ' (ID: 220), DEPTH: 28, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -4.371326446533203, SCORE: 0.0
+                                                          - [EVALUATED] '789G' (ID: 38), DEPTH: 29, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -4.371326446533203, SCORE: 0.0
+                                                            - [EVALUATED] 'HI.' (ID: 13), DEPTH: 30, ROLE: assistant, LOGP: -0.15, CUM_LOGP: -4.5222320556640625, SCORE: 0.0
+                                                              - [COMPLETED] '<|eom_id|>' (ID: 128008), DEPTH: 31, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -4.523567199707031, SCORE: -1
+                                                            - [QUEUED] 'HI to' (ID: 311), DEPTH: 30, ROLE: assistant, LOGP: -2.14, CUM_LOGP: -6.515041351318359, SCORE: 0.0
+                                                    - [QUEUED] ' tweet to' (ID: 311), DEPTH: 26, ROLE: assistant, LOGP: -2.70, CUM_LOGP: -6.824634552001953, SCORE: 0.0
+                                                    - [QUEUED] ' tweet with' (ID: 449), DEPTH: 26, ROLE: assistant, LOGP: -4.07, CUM_LOGP: -8.194644927978516, SCORE: 0.0
+                                                    - [QUEUED] ' tweet.' (ID: 13), DEPTH: 26, ROLE: assistant, LOGP: -4.62, CUM_LOGP: -8.741842269897461, SCORE: 0.0
+                                                  - [QUEUED] ' to find' (ID: 1505), DEPTH: 25, ROLE: assistant, LOGP: -1.43, CUM_LOGP: -4.489433288574219, SCORE: 0.0
+                                                  - [QUEUED] ' where the' (ID: 279), DEPTH: 25, ROLE: assistant, LOGP: -1.52, CUM_LOGP: -4.584632873535156, SCORE: 0.0
+                                                  - [QUEUED] ' to get' (ID: 636), DEPTH: 25, ROLE: assistant, LOGP: -2.82, CUM_LOGP: -5.884021759033203, SCORE: 0.0
+                                                  - [QUEUED] ' to determine' (ID: 8417), DEPTH: 25, ROLE: assistant, LOGP: -4.66, CUM_LOGP: -7.7214813232421875, SCORE: 0.0
+                                                - [QUEUED] ' the controversial' (ID: 20733), DEPTH: 24, ROLE: assistant, LOGP: -2.11, CUM_LOGP: -4.544837951660156, SCORE: 0.0
+                                                - [QUEUED] ' locations to' (ID: 311), DEPTH: 24, ROLE: assistant, LOGP: -2.12, CUM_LOGP: -4.554168701171875, SCORE: 0.0
+                                                - [QUEUED] ' the post' (ID: 1772), DEPTH: 24, ROLE: assistant, LOGP: -2.58, CUM_LOGP: -5.014331817626953, SCORE: 0.0
+                                                - [QUEUED] ' locations related' (ID: 5552), DEPTH: 24, ROLE: assistant, LOGP: -4.08, CUM_LOGP: -6.514575958251953, SCORE: 0.0
+                                                - [QUEUED] ' locations.' (ID: 13), DEPTH: 24, ROLE: assistant, LOGP: -4.31, CUM_LOGP: -6.74383544921875, SCORE: 0.0
+                                            - [QUEUED] ' should try' (ID: 1456), DEPTH: 22, ROLE: assistant, LOGP: -3.38, CUM_LOGP: -5.592903137207031, SCORE: 0.0
+                                            - [QUEUED] ' should search' (ID: 2778), DEPTH: 22, ROLE: assistant, LOGP: -3.68, CUM_LOGP: -5.889636993408203, SCORE: 0.0
+                                          - [EVALUATED] ', I' (ID: 358), DEPTH: 21, ROLE: assistant, LOGP: -1.01, CUM_LOGP: -2.3862457275390625, SCORE: 0.0
+                                            - [EVALUATED] ' will search' (ID: 2778), DEPTH: 22, ROLE: assistant, LOGP: -0.96, CUM_LOGP: -3.343975067138672, SCORE: 0.0
+                                              - [EVALUATED] ' for the' (ID: 279), DEPTH: 23, ROLE: assistant, LOGP: -0.18, CUM_LOGP: -3.5252151489257812, SCORE: 0.0
+                                                - [QUEUED] ' location of' (ID: 315), DEPTH: 24, ROLE: assistant, LOGP: -1.52, CUM_LOGP: -5.040365219116211, SCORE: 0.0
+                                                - [QUEUED] ' location "' (ID: 330), DEPTH: 24, ROLE: assistant, LOGP: -1.56, CUM_LOGP: -5.086872100830078, SCORE: 0.0
+                                                - [QUEUED] ' controversial tweet' (ID: 12072), DEPTH: 24, ROLE: assistant, LOGP: -2.40, CUM_LOGP: -5.92926025390625, SCORE: 0.0
+                                                - [QUEUED] ' location with' (ID: 449), DEPTH: 24, ROLE: assistant, LOGP: -2.67, CUM_LOGP: -6.196191787719727, SCORE: 0.0
+                                                - [QUEUED] ' location to' (ID: 311), DEPTH: 24, ROLE: assistant, LOGP: -2.79, CUM_LOGP: -6.311298370361328, SCORE: 0.0
+                                                - [QUEUED] ' post with' (ID: 449), DEPTH: 24, ROLE: assistant, LOGP: -2.87, CUM_LOGP: -6.394386291503906, SCORE: 0.0
+                                                - [QUEUED] ' location named' (ID: 7086), DEPTH: 24, ROLE: assistant, LOGP: -2.89, CUM_LOGP: -6.415407180786133, SCORE: 0.0
+                                                - [QUEUED] ' location where' (ID: 1405), DEPTH: 24, ROLE: assistant, LOGP: -2.96, CUM_LOGP: -6.480499267578125, SCORE: 0.0
+                                                - [QUEUED] ' post again' (ID: 1578), DEPTH: 24, ROLE: assistant, LOGP: -3.18, CUM_LOGP: -6.704200744628906, SCORE: 0.0
+                                                - [QUEUED] ' post by' (ID: 555), DEPTH: 24, ROLE: assistant, LOGP: -3.26, CUM_LOGP: -6.782646179199219, SCORE: 0.0
+                                              - [QUEUED] ' for locations' (ID: 10687), DEPTH: 23, ROLE: assistant, LOGP: -2.11, CUM_LOGP: -5.456718444824219, SCORE: 0.0
+                                            - [EVALUATED] ' will try' (ID: 1456), DEPTH: 22, ROLE: assistant, LOGP: -1.20, CUM_LOGP: -3.5857315063476562, SCORE: 0.0
+                                              - [EVALUATED] ' to search' (ID: 2778), DEPTH: 23, ROLE: assistant, LOGP: -0.17, CUM_LOGP: -3.7580947875976562, SCORE: 0.0
+                                                - [EVALUATED] ' for the' (ID: 279), DEPTH: 24, ROLE: assistant, LOGP: -0.37, CUM_LOGP: -4.127132415771484, SCORE: 0.0
+                                                  - [QUEUED] ' location of' (ID: 315), DEPTH: 25, ROLE: assistant, LOGP: -1.56, CUM_LOGP: -5.687711715698242, SCORE: 0.0
+                                                  - [QUEUED] ' post by' (ID: 555), DEPTH: 25, ROLE: assistant, LOGP: -2.42, CUM_LOGP: -6.552021026611328, SCORE: 0.0
+                                                  - [QUEUED] ' post again' (ID: 1578), DEPTH: 25, ROLE: assistant, LOGP: -2.63, CUM_LOGP: -6.754371643066406, SCORE: 0.0
+                                                  - [QUEUED] ' controversial tweet' (ID: 12072), DEPTH: 25, ROLE: assistant, LOGP: -2.65, CUM_LOGP: -6.7768707275390625, SCORE: 0.0
+                                                  - [QUEUED] ' location to' (ID: 311), DEPTH: 25, ROLE: assistant, LOGP: -2.65, CUM_LOGP: -6.778537750244141, SCORE: 0.0
+                                                  - [QUEUED] ' location "' (ID: 330), DEPTH: 25, ROLE: assistant, LOGP: -2.99, CUM_LOGP: -7.121427536010742, SCORE: 0.0
+                                                  - [QUEUED] ' location where' (ID: 1405), DEPTH: 25, ROLE: assistant, LOGP: -3.00, CUM_LOGP: -7.122686386108398, SCORE: 0.0
+                                                  - [QUEUED] ' post with' (ID: 449), DEPTH: 25, ROLE: assistant, LOGP: -3.09, CUM_LOGP: -7.217350006103516, SCORE: 0.0
+                                                  - [QUEUED] ' location associated' (ID: 5938), DEPTH: 25, ROLE: assistant, LOGP: -3.29, CUM_LOGP: -7.4175872802734375, SCORE: 0.0
+                                                  - [QUEUED] ' post using' (ID: 1701), DEPTH: 25, ROLE: assistant, LOGP: -3.37, CUM_LOGP: -7.497478485107422, SCORE: 0.0
+                                                  - [QUEUED] ' location with' (ID: 449), DEPTH: 25, ROLE: assistant, LOGP: -3.49, CUM_LOGP: -7.616046905517578, SCORE: 0.0
+                                                  - [QUEUED] ' post first' (ID: 1176), DEPTH: 25, ROLE: assistant, LOGP: -3.62, CUM_LOGP: -7.743198394775391, SCORE: 0.0
+                                                  - [QUEUED] ' location that' (ID: 430), DEPTH: 25, ROLE: assistant, LOGP: -3.64, CUM_LOGP: -7.766473770141602, SCORE: 0.0
+                                                  - [QUEUED] ' ID to' (ID: 311), DEPTH: 25, ROLE: assistant, LOGP: -4.10, CUM_LOGP: -8.230236053466797, SCORE: 0.0
+                                                  - [QUEUED] ' location related' (ID: 5552), DEPTH: 25, ROLE: assistant, LOGP: -4.38, CUM_LOGP: -8.509590148925781, SCORE: 0.0
+                                                  - [QUEUED] ' ID ' (ID: 220), DEPTH: 25, ROLE: assistant, LOGP: -4.52, CUM_LOGP: -8.647533416748047, SCORE: 0.0
+                                                  - [QUEUED] ' ID of' (ID: 315), DEPTH: 25, ROLE: assistant, LOGP: -4.71, CUM_LOGP: -8.836376190185547, SCORE: 0.0
+                                                  - [QUEUED] ' ID "' (ID: 330), DEPTH: 25, ROLE: assistant, LOGP: -4.90, CUM_LOGP: -9.025650024414062, SCORE: 0.0
+                                                - [QUEUED] ' for it' (ID: 433), DEPTH: 24, ROLE: assistant, LOGP: -1.62, CUM_LOGP: -5.3769989013671875, SCORE: 0.0
+                                                - [QUEUED] ' for locations' (ID: 10687), DEPTH: 24, ROLE: assistant, LOGP: -2.49, CUM_LOGP: -6.243797302246094, SCORE: 0.0
+                                              - [QUEUED] ' searching for' (ID: 369), DEPTH: 23, ROLE: assistant, LOGP: -2.30, CUM_LOGP: -5.890056610107422, SCORE: 0.0
+                                            - [QUEUED] ' need to' (ID: 311), DEPTH: 22, ROLE: assistant, LOGP: -2.08, CUM_LOGP: -4.471103668212891, SCORE: 0.0
+                                            - [QUEUED] ' will call' (ID: 1650), DEPTH: 22, ROLE: assistant, LOGP: -2.92, CUM_LOGP: -5.308834075927734, SCORE: 0.0
+                                            - [QUEUED] ' will attempt' (ID: 4879), DEPTH: 22, ROLE: assistant, LOGP: -3.02, CUM_LOGP: -5.406639099121094, SCORE: 0.0
+                                          - [QUEUED] ', the' (ID: 279), DEPTH: 21, ROLE: assistant, LOGP: -2.46, CUM_LOGP: -3.8386077880859375, SCORE: 0.0
+                                          - [QUEUED] ', let' (ID: 1095), DEPTH: 21, ROLE: assistant, LOGP: -2.86, CUM_LOGP: -4.244102478027344, SCORE: 0.0
+                                      - [QUEUED] ' previous function' (ID: 734), DEPTH: 19, ROLE: assistant, LOGP: -1.40, CUM_LOGP: -2.1682891845703125, SCORE: 0.0
+                                      - [QUEUED] ' function call' (ID: 1650), DEPTH: 19, ROLE: assistant, LOGP: -2.24, CUM_LOGP: -3.0040206909179688, SCORE: 0.0
+                                      - [QUEUED] ' function "' (ID: 330), DEPTH: 19, ROLE: assistant, LOGP: -4.31, CUM_LOGP: -5.073749542236328, SCORE: 0.0
+                                    - [QUEUED] 'Based on' (ID: 389), DEPTH: 18, ROLE: assistant, LOGP: -2.41, CUM_LOGP: -2.963979721069336, SCORE: 0.0
+                    - [QUEUED] '789G' (ID: 38), DEPTH: 10, ROLE: assistant, LOGP: -2.31, CUM_LOGP: -2.5331764221191406, SCORE: 0.0
+  - [EVALUATED] '{"name' (ID: 609), DEPTH: 1, ROLE: assistant, LOGP: -1.60, CUM_LOGP: -1.6035728454589844, SCORE: 0.0
+    - [EVALUATED] '": "' (ID: 330), DEPTH: 2, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -1.6035728454589844, SCORE: 0.0
+      - [EVALUATED] 'read_post' (ID: 6467), DEPTH: 3, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -1.6035728454589844, SCORE: 0.0
+        - [EVALUATED] '", "' (ID: 330), DEPTH: 4, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -1.6035728454589844, SCORE: 0.0
+          - [EVALUATED] 'parameters":' (ID: 794), DEPTH: 5, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -1.6043205261230469, SCORE: 0.0
+            - [EVALUATED] ' {"post' (ID: 2252), DEPTH: 6, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -1.6043243408203125, SCORE: 0.0
+              - [EVALUATED] '_name_or' (ID: 8908), DEPTH: 7, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -1.6043243408203125, SCORE: 0.0
+                - [EVALUATED] '_path":' (ID: 794), DEPTH: 8, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -1.6043243408203125, SCORE: 0.0
+                  - [EVALUATED] ' "cont' (ID: 778), DEPTH: 9, ROLE: assistant, LOGP: -0.24, CUM_LOGP: -1.8409996032714844, SCORE: 0.0
+                    - [EVALUATED] 'roversial' (ID: 532), DEPTH: 10, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -1.8424072265625, SCORE: 0.0
+                      - [EVALUATED] ' tweet with' (ID: 449), DEPTH: 11, ROLE: assistant, LOGP: -0.06, CUM_LOGP: -1.904144287109375, SCORE: 0.0
+                        - [EVALUATED] ' the ID' (ID: 3110), DEPTH: 12, ROLE: assistant, LOGP: -0.14, CUM_LOGP: -2.0433998107910156, SCORE: 0.0
+                          - [EVALUATED] ' 789' (ID: 16474), DEPTH: 13, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -2.0433998107910156, SCORE: 0.0
+                            - [EVALUATED] 'GHI' (ID: 24860), DEPTH: 14, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -2.0433998107910156, SCORE: 0.0
+                              - [CREATED] '"}}<|eom_id|>' (ID: 128008), DEPTH: 15, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -2.046417236328125, SCORE: -1
+                                - [EVALUATED] '{"success": false, "message": "Post not found."}' (ID: 92), DEPTH: 16, ROLE: tool, LOGP: 0.00, CUM_LOGP: -2.046417236328125, SCORE: 0.0
+                                  - [EVALUATED] 'Since the' (ID: 279), DEPTH: 17, ROLE: assistant, LOGP: -0.21, CUM_LOGP: -2.2558021545410156, SCORE: 0.0
+                                    - [EVALUATED] ' post was' (ID: 574), DEPTH: 18, ROLE: assistant, LOGP: -0.61, CUM_LOGP: -2.8683395385742188, SCORE: 0.0
+                                      - [EVALUATED] ' not found' (ID: 1766), DEPTH: 19, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -2.8683395385742188, SCORE: 0.0
+                                        - [EVALUATED] ', we' (ID: 584), DEPTH: 20, ROLE: assistant, LOGP: -0.83, CUM_LOGP: -3.7008514404296875, SCORE: 0.0
+                                          - [EVALUATED] ' need to' (ID: 311), DEPTH: 21, ROLE: assistant, LOGP: -0.12, CUM_LOGP: -3.8228530883789062, SCORE: 0.0
+                                            - [EVALUATED] ' search for' (ID: 369), DEPTH: 22, ROLE: assistant, LOGP: -0.10, CUM_LOGP: -3.9230003356933594, SCORE: 0.0
+                                              - [EVALUATED] ' the location' (ID: 3813), DEPTH: 23, ROLE: assistant, LOGP: -0.63, CUM_LOGP: -4.549587249755859, SCORE: 0.0
+                                                - [EVALUATED] ' of the' (ID: 279), DEPTH: 24, ROLE: assistant, LOGP: -1.06, CUM_LOGP: -5.610847473144531, SCORE: 0.0
+                                                  - [EVALUATED] ' controversial tweet' (ID: 12072), DEPTH: 25, ROLE: assistant, LOGP: -0.15, CUM_LOGP: -5.7589874267578125, SCORE: 0.0
+                                                    - [EVALUATED] ' with the' (ID: 279), DEPTH: 26, ROLE: assistant, LOGP: -0.10, CUM_LOGP: -5.860191345214844, SCORE: 0.0
+                                                      - [EVALUATED] ' ID ' (ID: 220), DEPTH: 27, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -5.860240936279297, SCORE: 0.0
+                                                        - [EVALUATED] '789G' (ID: 38), DEPTH: 28, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -5.860240936279297, SCORE: 0.0
+                                                          - [EVALUATED] 'HI.' (ID: 13), DEPTH: 29, ROLE: assistant, LOGP: -0.15, CUM_LOGP: -6.011146545410156, SCORE: 0.0
+                                                            - [COMPLETED] '<|eom_id|>' (ID: 128008), DEPTH: 30, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -6.012481689453125, SCORE: -1
+                                                          - [QUEUED] 'HI to' (ID: 311), DEPTH: 29, ROLE: assistant, LOGP: -2.14, CUM_LOGP: -8.003955841064453, SCORE: 0.0
+                                                  - [QUEUED] ' tweet to' (ID: 311), DEPTH: 25, ROLE: assistant, LOGP: -2.70, CUM_LOGP: -8.313549041748047, SCORE: 0.0
+                                                  - [QUEUED] ' tweet with' (ID: 449), DEPTH: 25, ROLE: assistant, LOGP: -4.07, CUM_LOGP: -9.68355941772461, SCORE: 0.0
+                                                  - [QUEUED] ' tweet.' (ID: 13), DEPTH: 25, ROLE: assistant, LOGP: -4.62, CUM_LOGP: -10.230756759643555, SCORE: 0.0
+                                                - [QUEUED] ' to find' (ID: 1505), DEPTH: 24, ROLE: assistant, LOGP: -1.43, CUM_LOGP: -5.9783477783203125, SCORE: 0.0
+                                                - [QUEUED] ' where the' (ID: 279), DEPTH: 24, ROLE: assistant, LOGP: -1.52, CUM_LOGP: -6.07354736328125, SCORE: 0.0
+                                                - [QUEUED] ' to get' (ID: 636), DEPTH: 24, ROLE: assistant, LOGP: -2.82, CUM_LOGP: -7.372936248779297, SCORE: 0.0
+                                                - [QUEUED] ' to determine' (ID: 8417), DEPTH: 24, ROLE: assistant, LOGP: -4.66, CUM_LOGP: -9.210395812988281, SCORE: 0.0
+                                              - [QUEUED] ' the controversial' (ID: 20733), DEPTH: 23, ROLE: assistant, LOGP: -2.11, CUM_LOGP: -6.03375244140625, SCORE: 0.0
+                                              - [QUEUED] ' locations to' (ID: 311), DEPTH: 23, ROLE: assistant, LOGP: -2.12, CUM_LOGP: -6.043083190917969, SCORE: 0.0
+                                              - [QUEUED] ' the post' (ID: 1772), DEPTH: 23, ROLE: assistant, LOGP: -2.58, CUM_LOGP: -6.503246307373047, SCORE: 0.0
+                                              - [QUEUED] ' locations related' (ID: 5552), DEPTH: 23, ROLE: assistant, LOGP: -4.08, CUM_LOGP: -8.003490447998047, SCORE: 0.0
+                                              - [QUEUED] ' locations.' (ID: 13), DEPTH: 23, ROLE: assistant, LOGP: -4.31, CUM_LOGP: -8.232749938964844, SCORE: 0.0
+                                          - [QUEUED] ' should try' (ID: 1456), DEPTH: 21, ROLE: assistant, LOGP: -3.38, CUM_LOGP: -7.081817626953125, SCORE: 0.0
+                                          - [QUEUED] ' should search' (ID: 2778), DEPTH: 21, ROLE: assistant, LOGP: -3.68, CUM_LOGP: -7.378551483154297, SCORE: 0.0
+                                        - [EVALUATED] ', I' (ID: 358), DEPTH: 20, ROLE: assistant, LOGP: -1.01, CUM_LOGP: -3.8751602172851562, SCORE: 0.0
+                                          - [EVALUATED] ' will search' (ID: 2778), DEPTH: 21, ROLE: assistant, LOGP: -0.96, CUM_LOGP: -4.832889556884766, SCORE: 0.0
+                                            - [EVALUATED] ' for the' (ID: 279), DEPTH: 22, ROLE: assistant, LOGP: -0.18, CUM_LOGP: -5.014129638671875, SCORE: 0.0
+                                              - [QUEUED] ' location of' (ID: 315), DEPTH: 23, ROLE: assistant, LOGP: -1.52, CUM_LOGP: -6.529279708862305, SCORE: 0.0
+                                              - [QUEUED] ' location "' (ID: 330), DEPTH: 23, ROLE: assistant, LOGP: -1.56, CUM_LOGP: -6.575786590576172, SCORE: 0.0
+                                              - [QUEUED] ' controversial tweet' (ID: 12072), DEPTH: 23, ROLE: assistant, LOGP: -2.40, CUM_LOGP: -7.418174743652344, SCORE: 0.0
+                                              - [QUEUED] ' location with' (ID: 449), DEPTH: 23, ROLE: assistant, LOGP: -2.67, CUM_LOGP: -7.68510627746582, SCORE: 0.0
+                                              - [QUEUED] ' location to' (ID: 311), DEPTH: 23, ROLE: assistant, LOGP: -2.79, CUM_LOGP: -7.800212860107422, SCORE: 0.0
+                                              - [QUEUED] ' post with' (ID: 449), DEPTH: 23, ROLE: assistant, LOGP: -2.87, CUM_LOGP: -7.88330078125, SCORE: 0.0
+                                              - [QUEUED] ' location named' (ID: 7086), DEPTH: 23, ROLE: assistant, LOGP: -2.89, CUM_LOGP: -7.904321670532227, SCORE: 0.0
+                                              - [QUEUED] ' location where' (ID: 1405), DEPTH: 23, ROLE: assistant, LOGP: -2.96, CUM_LOGP: -7.969413757324219, SCORE: 0.0
+                                              - [QUEUED] ' post again' (ID: 1578), DEPTH: 23, ROLE: assistant, LOGP: -3.18, CUM_LOGP: -8.193115234375, SCORE: 0.0
+                                              - [QUEUED] ' post by' (ID: 555), DEPTH: 23, ROLE: assistant, LOGP: -3.26, CUM_LOGP: -8.271560668945312, SCORE: 0.0
+                                            - [QUEUED] ' for locations' (ID: 10687), DEPTH: 22, ROLE: assistant, LOGP: -2.11, CUM_LOGP: -6.9456329345703125, SCORE: 0.0
+                                          - [EVALUATED] ' will try' (ID: 1456), DEPTH: 21, ROLE: assistant, LOGP: -1.20, CUM_LOGP: -5.07464599609375, SCORE: 0.0
+                                            - [EVALUATED] ' to search' (ID: 2778), DEPTH: 22, ROLE: assistant, LOGP: -0.17, CUM_LOGP: -5.24700927734375, SCORE: 0.0
+                                              - [EVALUATED] ' for the' (ID: 279), DEPTH: 23, ROLE: assistant, LOGP: -0.37, CUM_LOGP: -5.616046905517578, SCORE: 0.0
+                                                - [QUEUED] ' location of' (ID: 315), DEPTH: 24, ROLE: assistant, LOGP: -1.56, CUM_LOGP: -7.176626205444336, SCORE: 0.0
+                                                - [QUEUED] ' post by' (ID: 555), DEPTH: 24, ROLE: assistant, LOGP: -2.42, CUM_LOGP: -8.040935516357422, SCORE: 0.0
+                                                - [QUEUED] ' post again' (ID: 1578), DEPTH: 24, ROLE: assistant, LOGP: -2.63, CUM_LOGP: -8.2432861328125, SCORE: 0.0
+                                                - [QUEUED] ' controversial tweet' (ID: 12072), DEPTH: 24, ROLE: assistant, LOGP: -2.65, CUM_LOGP: -8.265785217285156, SCORE: 0.0
+                                                - [QUEUED] ' location to' (ID: 311), DEPTH: 24, ROLE: assistant, LOGP: -2.65, CUM_LOGP: -8.267452239990234, SCORE: 0.0
+                                                - [QUEUED] ' location "' (ID: 330), DEPTH: 24, ROLE: assistant, LOGP: -2.99, CUM_LOGP: -8.610342025756836, SCORE: 0.0
+                                                - [QUEUED] ' location where' (ID: 1405), DEPTH: 24, ROLE: assistant, LOGP: -3.00, CUM_LOGP: -8.611600875854492, SCORE: 0.0
+                                                - [QUEUED] ' post with' (ID: 449), DEPTH: 24, ROLE: assistant, LOGP: -3.09, CUM_LOGP: -8.70626449584961, SCORE: 0.0
+                                                - [QUEUED] ' location associated' (ID: 5938), DEPTH: 24, ROLE: assistant, LOGP: -3.29, CUM_LOGP: -8.906501770019531, SCORE: 0.0
+                                                - [QUEUED] ' post using' (ID: 1701), DEPTH: 24, ROLE: assistant, LOGP: -3.37, CUM_LOGP: -8.986392974853516, SCORE: 0.0
+                                                - [QUEUED] ' location with' (ID: 449), DEPTH: 24, ROLE: assistant, LOGP: -3.49, CUM_LOGP: -9.104961395263672, SCORE: 0.0
+                                                - [QUEUED] ' post first' (ID: 1176), DEPTH: 24, ROLE: assistant, LOGP: -3.62, CUM_LOGP: -9.232112884521484, SCORE: 0.0
+                                                - [QUEUED] ' location that' (ID: 430), DEPTH: 24, ROLE: assistant, LOGP: -3.64, CUM_LOGP: -9.255388259887695, SCORE: 0.0
+                                                - [QUEUED] ' ID to' (ID: 311), DEPTH: 24, ROLE: assistant, LOGP: -4.10, CUM_LOGP: -9.71915054321289, SCORE: 0.0
+                                                - [QUEUED] ' location related' (ID: 5552), DEPTH: 24, ROLE: assistant, LOGP: -4.38, CUM_LOGP: -9.998504638671875, SCORE: 0.0
+                                                - [QUEUED] ' ID ' (ID: 220), DEPTH: 24, ROLE: assistant, LOGP: -4.52, CUM_LOGP: -10.13644790649414, SCORE: 0.0
+                                                - [QUEUED] ' ID of' (ID: 315), DEPTH: 24, ROLE: assistant, LOGP: -4.71, CUM_LOGP: -10.32529067993164, SCORE: 0.0
+                                                - [QUEUED] ' ID "' (ID: 330), DEPTH: 24, ROLE: assistant, LOGP: -4.90, CUM_LOGP: -10.514564514160156, SCORE: 0.0
+                                              - [QUEUED] ' for it' (ID: 433), DEPTH: 23, ROLE: assistant, LOGP: -1.62, CUM_LOGP: -6.865913391113281, SCORE: 0.0
+                                              - [QUEUED] ' for locations' (ID: 10687), DEPTH: 23, ROLE: assistant, LOGP: -2.49, CUM_LOGP: -7.7327117919921875, SCORE: 0.0
+                                            - [QUEUED] ' searching for' (ID: 369), DEPTH: 22, ROLE: assistant, LOGP: -2.30, CUM_LOGP: -7.378971099853516, SCORE: 0.0
+                                          - [QUEUED] ' need to' (ID: 311), DEPTH: 21, ROLE: assistant, LOGP: -2.08, CUM_LOGP: -5.960018157958984, SCORE: 0.0
+                                          - [QUEUED] ' will call' (ID: 1650), DEPTH: 21, ROLE: assistant, LOGP: -2.92, CUM_LOGP: -6.797748565673828, SCORE: 0.0
+                                          - [QUEUED] ' will attempt' (ID: 4879), DEPTH: 21, ROLE: assistant, LOGP: -3.02, CUM_LOGP: -6.8955535888671875, SCORE: 0.0
+                                        - [QUEUED] ', the' (ID: 279), DEPTH: 20, ROLE: assistant, LOGP: -2.46, CUM_LOGP: -5.327522277832031, SCORE: 0.0
+                                        - [QUEUED] ', let' (ID: 1095), DEPTH: 20, ROLE: assistant, LOGP: -2.86, CUM_LOGP: -5.7330169677734375, SCORE: 0.0
+                                    - [QUEUED] ' previous function' (ID: 734), DEPTH: 18, ROLE: assistant, LOGP: -1.40, CUM_LOGP: -3.6572036743164062, SCORE: 0.0
+                                    - [QUEUED] ' function call' (ID: 1650), DEPTH: 18, ROLE: assistant, LOGP: -2.24, CUM_LOGP: -4.4929351806640625, SCORE: 0.0
+                                    - [QUEUED] ' function "' (ID: 330), DEPTH: 18, ROLE: assistant, LOGP: -4.31, CUM_LOGP: -6.562664031982422, SCORE: 0.0
+                                  - [QUEUED] 'Based on' (ID: 389), DEPTH: 17, ROLE: assistant, LOGP: -2.41, CUM_LOGP: -4.45289421081543, SCORE: 0.0
+                        - [EVALUATED] ' ID ' (ID: 220), DEPTH: 12, ROLE: assistant, LOGP: -2.04, CUM_LOGP: -3.945354461669922, SCORE: 0.0
+                          - [EVALUATED] '789G' (ID: 38), DEPTH: 13, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -3.945354461669922, SCORE: 0.0
+                            - [EVALUATED] 'HI"}}' (ID: 32075), DEPTH: 14, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -3.945354461669922, SCORE: 0.0
+                              - [CREATED] '<|eom_id|>' (ID: 128008), DEPTH: 15, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -3.9481544494628906, SCORE: -1
+                                - [EVALUATED] '{"success": false, "message": "Post not found."}' (ID: 92), DEPTH: 16, ROLE: tool, LOGP: 0.00, CUM_LOGP: -3.9481544494628906, SCORE: 0.0
+                                  - [EVALUATED] 'Since the' (ID: 279), DEPTH: 17, ROLE: assistant, LOGP: -0.21, CUM_LOGP: -4.157142639160156, SCORE: 0.0
+                                    - [EVALUATED] ' post was' (ID: 574), DEPTH: 18, ROLE: assistant, LOGP: -0.59, CUM_LOGP: -4.751873016357422, SCORE: 0.0
+                                      - [EVALUATED] ' not found' (ID: 1766), DEPTH: 19, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -4.751873016357422, SCORE: 0.0
+                                        - [EVALUATED] ', we' (ID: 584), DEPTH: 20, ROLE: assistant, LOGP: -0.84, CUM_LOGP: -5.595188140869141, SCORE: 0.0
+                                          - [EVALUATED] ' need to' (ID: 311), DEPTH: 21, ROLE: assistant, LOGP: -0.13, CUM_LOGP: -5.724704742431641, SCORE: 0.0
+                                            - [EVALUATED] ' search for' (ID: 369), DEPTH: 22, ROLE: assistant, LOGP: -0.09, CUM_LOGP: -5.818874359130859, SCORE: 0.0
+                                              - [EVALUATED] ' the location' (ID: 3813), DEPTH: 23, ROLE: assistant, LOGP: -0.67, CUM_LOGP: -6.489601135253906, SCORE: 0.0
+                                                - [EVALUATED] ' of the' (ID: 279), DEPTH: 24, ROLE: assistant, LOGP: -1.07, CUM_LOGP: -7.560493469238281, SCORE: 0.0
+                                                  - [EVALUATED] ' controversial tweet' (ID: 12072), DEPTH: 25, ROLE: assistant, LOGP: -0.14, CUM_LOGP: -7.697185516357422, SCORE: 0.0
+                                                    - [EVALUATED] ' with the' (ID: 279), DEPTH: 26, ROLE: assistant, LOGP: -0.54, CUM_LOGP: -8.237812042236328, SCORE: 0.0
+                                                      - [EVALUATED] ' ID ' (ID: 220), DEPTH: 27, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -8.238204956054688, SCORE: 0.0
+                                                        - [EVALUATED] '789G' (ID: 38), DEPTH: 28, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -8.238204956054688, SCORE: 0.0
+                                                          - [EVALUATED] 'HI.' (ID: 13), DEPTH: 29, ROLE: assistant, LOGP: -0.16, CUM_LOGP: -8.39892578125, SCORE: 0.0
+                                                            - [COMPLETED] '<|eom_id|>' (ID: 128008), DEPTH: 30, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -8.400257110595703, SCORE: -1
+                                                          - [QUEUED] 'HI to' (ID: 311), DEPTH: 29, ROLE: assistant, LOGP: -2.11, CUM_LOGP: -10.350685119628906, SCORE: 0.0
+                                                    - [QUEUED] ' with ID' (ID: 3110), DEPTH: 26, ROLE: assistant, LOGP: -1.33, CUM_LOGP: -9.02813720703125, SCORE: 0.0
+                                                    - [COMPLETED] '.<|eom_id|>' (ID: 128008), DEPTH: 26, ROLE: assistant, LOGP: -2.50, CUM_LOGP: -10.195722579956055, SCORE: -1
+                                                  - [QUEUED] ' tweet to' (ID: 311), DEPTH: 25, ROLE: assistant, LOGP: -2.69, CUM_LOGP: -10.247608184814453, SCORE: 0.0
+                                                  - [QUEUED] ' tweet with' (ID: 449), DEPTH: 25, ROLE: assistant, LOGP: -4.34, CUM_LOGP: -11.903364181518555, SCORE: 0.0
+                                                  - [QUEUED] ' tweet.' (ID: 13), DEPTH: 25, ROLE: assistant, LOGP: -4.58, CUM_LOGP: -12.14525032043457, SCORE: 0.0
+                                                - [QUEUED] ' where the' (ID: 279), DEPTH: 24, ROLE: assistant, LOGP: -1.31, CUM_LOGP: -7.800899505615234, SCORE: 0.0
+                                                - [QUEUED] ' to find' (ID: 1505), DEPTH: 24, ROLE: assistant, LOGP: -1.54, CUM_LOGP: -8.034500122070312, SCORE: 0.0
+                                                - [QUEUED] ' to get' (ID: 636), DEPTH: 24, ROLE: assistant, LOGP: -3.01, CUM_LOGP: -9.495677947998047, SCORE: 0.0
+                                                - [QUEUED] ' to determine' (ID: 8417), DEPTH: 24, ROLE: assistant, LOGP: -4.82, CUM_LOGP: -11.306468963623047, SCORE: 0.0
+                                              - [QUEUED] ' the controversial' (ID: 20733), DEPTH: 23, ROLE: assistant, LOGP: -1.95, CUM_LOGP: -7.768627166748047, SCORE: 0.0
+                                              - [QUEUED] ' locations to' (ID: 311), DEPTH: 23, ROLE: assistant, LOGP: -2.15, CUM_LOGP: -7.973369598388672, SCORE: 0.0
+                                              - [QUEUED] ' the post' (ID: 1772), DEPTH: 23, ROLE: assistant, LOGP: -2.55, CUM_LOGP: -8.365829467773438, SCORE: 0.0
+                                              - [QUEUED] ' locations related' (ID: 5552), DEPTH: 23, ROLE: assistant, LOGP: -3.92, CUM_LOGP: -9.734291076660156, SCORE: 0.0
+                                              - [QUEUED] ' locations.' (ID: 13), DEPTH: 23, ROLE: assistant, LOGP: -4.43, CUM_LOGP: -10.250064849853516, SCORE: 0.0
+                                          - [QUEUED] ' should try' (ID: 1456), DEPTH: 21, ROLE: assistant, LOGP: -3.35, CUM_LOGP: -8.942886352539062, SCORE: 0.0
+                                          - [QUEUED] ' should search' (ID: 2778), DEPTH: 21, ROLE: assistant, LOGP: -3.58, CUM_LOGP: -9.177513122558594, SCORE: 0.0
+                                        - [EVALUATED] ', I' (ID: 358), DEPTH: 20, ROLE: assistant, LOGP: -0.97, CUM_LOGP: -5.726387023925781, SCORE: 0.0
+                                          - [EVALUATED] ' will search' (ID: 2778), DEPTH: 21, ROLE: assistant, LOGP: -0.88, CUM_LOGP: -6.601921081542969, SCORE: 0.0
+                                            - [EVALUATED] ' for the' (ID: 279), DEPTH: 22, ROLE: assistant, LOGP: -0.17, CUM_LOGP: -6.772701263427734, SCORE: 0.0
+                                              - [QUEUED] ' location of' (ID: 315), DEPTH: 23, ROLE: assistant, LOGP: -1.57, CUM_LOGP: -8.339347839355469, SCORE: 0.0
+                                              - [QUEUED] ' location "' (ID: 330), DEPTH: 23, ROLE: assistant, LOGP: -1.72, CUM_LOGP: -8.491519927978516, SCORE: 0.0
+                                              - [QUEUED] ' controversial tweet' (ID: 12072), DEPTH: 23, ROLE: assistant, LOGP: -2.25, CUM_LOGP: -9.027103424072266, SCORE: 0.0
+                                              - [QUEUED] ' post with' (ID: 449), DEPTH: 23, ROLE: assistant, LOGP: -2.67, CUM_LOGP: -9.438152313232422, SCORE: 0.0
+                                              - [QUEUED] ' location with' (ID: 449), DEPTH: 23, ROLE: assistant, LOGP: -2.78, CUM_LOGP: -9.550180435180664, SCORE: 0.0
+                                              - [QUEUED] ' location where' (ID: 1405), DEPTH: 23, ROLE: assistant, LOGP: -2.80, CUM_LOGP: -9.575345993041992, SCORE: 0.0
+                                              - [QUEUED] ' location named' (ID: 7086), DEPTH: 23, ROLE: assistant, LOGP: -2.84, CUM_LOGP: -9.614614486694336, SCORE: 0.0
+                                              - [QUEUED] ' location to' (ID: 311), DEPTH: 23, ROLE: assistant, LOGP: -2.92, CUM_LOGP: -9.69742202758789, SCORE: 0.0
+                                              - [QUEUED] ' post again' (ID: 1578), DEPTH: 23, ROLE: assistant, LOGP: -2.97, CUM_LOGP: -9.745437622070312, SCORE: 0.0
+                                              - [QUEUED] ' post by' (ID: 555), DEPTH: 23, ROLE: assistant, LOGP: -2.99, CUM_LOGP: -9.762435913085938, SCORE: 0.0
+                                            - [QUEUED] ' for locations' (ID: 10687), DEPTH: 22, ROLE: assistant, LOGP: -2.19, CUM_LOGP: -8.790531158447266, SCORE: 0.0
+                                          - [EVALUATED] ' will try' (ID: 1456), DEPTH: 21, ROLE: assistant, LOGP: -1.27, CUM_LOGP: -6.997661590576172, SCORE: 0.0
+                                            - [EVALUATED] ' to search' (ID: 2778), DEPTH: 22, ROLE: assistant, LOGP: -0.17, CUM_LOGP: -7.171291351318359, SCORE: 0.0
+                                              - [EVALUATED] ' for the' (ID: 279), DEPTH: 23, ROLE: assistant, LOGP: -0.37, CUM_LOGP: -7.538433074951172, SCORE: 0.0
+                                                - [QUEUED] ' location of' (ID: 315), DEPTH: 24, ROLE: assistant, LOGP: -1.61, CUM_LOGP: -9.143436431884766, SCORE: 0.0
+                                                - [QUEUED] ' post by' (ID: 555), DEPTH: 24, ROLE: assistant, LOGP: -2.29, CUM_LOGP: -9.832855224609375, SCORE: 0.0
+                                                - [QUEUED] ' controversial tweet' (ID: 12072), DEPTH: 24, ROLE: assistant, LOGP: -2.49, CUM_LOGP: -10.023590087890625, SCORE: 0.0
+                                                - [QUEUED] ' post again' (ID: 1578), DEPTH: 24, ROLE: assistant, LOGP: -2.52, CUM_LOGP: -10.057071685791016, SCORE: 0.0
+                                                - [QUEUED] ' location where' (ID: 1405), DEPTH: 24, ROLE: assistant, LOGP: -2.71, CUM_LOGP: -10.250089645385742, SCORE: 0.0
+                                                - [QUEUED] ' location to' (ID: 311), DEPTH: 24, ROLE: assistant, LOGP: -2.81, CUM_LOGP: -10.343997955322266, SCORE: 0.0
+                                                - [CREATED] ' post with' (ID: 449), DEPTH: 24, ROLE: assistant, LOGP: -3.05, CUM_LOGP: -10.588088989257812, SCORE: -1
+                                                - [CREATED] ' location "' (ID: 330), DEPTH: 24, ROLE: assistant, LOGP: -3.15, CUM_LOGP: -10.690858840942383, SCORE: -1
+                                                - [CREATED] ' location associated' (ID: 5938), DEPTH: 24, ROLE: assistant, LOGP: -3.23, CUM_LOGP: -10.767129898071289, SCORE: -1
+                                                - [CREATED] ' post using' (ID: 1701), DEPTH: 24, ROLE: assistant, LOGP: -3.28, CUM_LOGP: -10.82138442993164, SCORE: -1
+                                                - [CREATED] ' location with' (ID: 449), DEPTH: 24, ROLE: assistant, LOGP: -3.67, CUM_LOGP: -11.205381393432617, SCORE: -1
+                                                - [CREATED] ' location that' (ID: 430), DEPTH: 24, ROLE: assistant, LOGP: -3.70, CUM_LOGP: -11.240215301513672, SCORE: -1
+                                                - [CREATED] ' post first' (ID: 1176), DEPTH: 24, ROLE: assistant, LOGP: -3.98, CUM_LOGP: -11.520000457763672, SCORE: -1
+                                                - [CREATED] ' location related' (ID: 5552), DEPTH: 24, ROLE: assistant, LOGP: -4.34, CUM_LOGP: -11.877311706542969, SCORE: -1
+                                              - [QUEUED] ' for it' (ID: 433), DEPTH: 23, ROLE: assistant, LOGP: -1.63, CUM_LOGP: -8.80584716796875, SCORE: 0.0
+                                              - [QUEUED] ' for locations' (ID: 10687), DEPTH: 23, ROLE: assistant, LOGP: -2.47, CUM_LOGP: -9.639789581298828, SCORE: 0.0
+                                            - [QUEUED] ' searching for' (ID: 369), DEPTH: 22, ROLE: assistant, LOGP: -2.24, CUM_LOGP: -9.241466522216797, SCORE: 0.0
+                                          - [QUEUED] ' need to' (ID: 311), DEPTH: 21, ROLE: assistant, LOGP: -2.14, CUM_LOGP: -7.867698669433594, SCORE: 0.0
+                                          - [QUEUED] ' will call' (ID: 1650), DEPTH: 21, ROLE: assistant, LOGP: -3.00, CUM_LOGP: -8.726234436035156, SCORE: 0.0
+                                          - [QUEUED] ' will attempt' (ID: 4879), DEPTH: 21, ROLE: assistant, LOGP: -3.09, CUM_LOGP: -8.814449310302734, SCORE: 0.0
+                                        - [QUEUED] ', the' (ID: 279), DEPTH: 20, ROLE: assistant, LOGP: -2.48, CUM_LOGP: -7.232139587402344, SCORE: 0.0
+                                        - [QUEUED] ', let' (ID: 1095), DEPTH: 20, ROLE: assistant, LOGP: -2.95, CUM_LOGP: -7.698631286621094, SCORE: 0.0
+                                    - [QUEUED] ' previous function' (ID: 734), DEPTH: 18, ROLE: assistant, LOGP: -1.47, CUM_LOGP: -5.623970031738281, SCORE: 0.0
+                                    - [QUEUED] ' function call' (ID: 1650), DEPTH: 18, ROLE: assistant, LOGP: -2.24, CUM_LOGP: -6.39501953125, SCORE: 0.0
+                                    - [QUEUED] ' function "' (ID: 330), DEPTH: 18, ROLE: assistant, LOGP: -4.28, CUM_LOGP: -8.441932678222656, SCORE: 0.0
+                                  - [QUEUED] 'Based on' (ID: 389), DEPTH: 17, ROLE: assistant, LOGP: -2.37, CUM_LOGP: -6.322103500366211, SCORE: 0.0
+                  - [QUEUED] ' "789' (ID: 16474), DEPTH: 9, ROLE: assistant, LOGP: -2.08, CUM_LOGP: -3.685260772705078, SCORE: 0.0

@@ -1,0 +1,22 @@
+============================== GLOBAL METADATA ==============================
+target_model: google/gemma-3-4b-it
+target_engine_name: hf
+
+[sampling_params]
+- temperature: 1.0
+- top_p: 0.95
+- top_k: 64
+- likelihood: 0.0001
+- sampler_number: 10
+- attack_sampler_number: 20
+- short_response_max_new_tokens: 512
+- attack_sample_max_new_tokens: 1024
+- full_response_max_new_tokens: 1024
+
+[acceleration]
+- enable_sampling_cache: True
+- enable_sampling_buffer: True
+- enable_judging_buffer: True
+- enable_topk_optimization: True
+- enable_refuse_pattern_matching: True
+- enable_refuse_judger: True

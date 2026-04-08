@@ -1,0 +1,240 @@
+{
+  "session": "20260329-222314_single_turn_Llama-2-7b-chat-hf_hf_p0.9_k-1_t0.6_lh0.0001_cs1_greedy_cacheon_sbufon_jbufon_topkon_refPaton_refJudgeon",
+  "functions": {
+    "sampler.generate": {
+      "calls": 41,
+      "total_sec": 567.0564,
+      "self_sec": 0.4038,
+      "mean_sec": 13.8306,
+      "min_sec": 1.98,
+      "max_sec": 23.2167
+    },
+    "sampler.flush_once": {
+      "calls": 25,
+      "total_sec": 552.5115,
+      "self_sec": 0.3545,
+      "mean_sec": 22.1005,
+      "min_sec": 7.648,
+      "max_sec": 30.7297
+    },
+    "sampler.engine.forward_step": {
+      "calls": 8523,
+      "total_sec": 222.3298,
+      "self_sec": 0.3636,
+      "mean_sec": 0.0261,
+      "min_sec": 0.0178,
+      "max_sec": 3.0645
+    },
+    "sampler.engine.model_forward": {
+      "calls": 8523,
+      "total_sec": 221.9662,
+      "self_sec": 221.9662,
+      "mean_sec": 0.026,
+      "min_sec": 0.0178,
+      "max_sec": 3.0644
+    },
+    "sampler.sample_step": {
+      "calls": 8159,
+      "total_sec": 186.645,
+      "self_sec": 0.8203,
+      "mean_sec": 0.0229,
+      "min_sec": 0.0009,
+      "max_sec": 0.1444
+    },
+    "sampler.nonzero_sync": {
+      "calls": 8159,
+      "total_sec": 179.3132,
+      "self_sec": 179.3132,
+      "mean_sec": 0.022,
+      "min_sec": 0.0,
+      "max_sec": 0.1406
+    },
+    "sampler.generate.smoothing": {
+      "calls": 8159,
+      "total_sec": 161.8771,
+      "self_sec": 161.8771,
+      "mean_sec": 0.0198,
+      "min_sec": 0.0,
+      "max_sec": 10.7478
+    },
+    "judger.flush_once": {
+      "calls": 25,
+      "total_sec": 13.4808,
+      "self_sec": 13.4808,
+      "mean_sec": 0.5392,
+      "min_sec": 0.2969,
+      "max_sec": 0.9271
+    },
+    "sampler.top_p_k_subset": {
+      "calls": 8159,
+      "total_sec": 2.1672,
+      "self_sec": 2.1672,
+      "mean_sec": 0.0003,
+      "min_sec": 0.0003,
+      "max_sec": 0.0007
+    },
+    "sampler.generate.tau_update": {
+      "calls": 8159,
+      "total_sec": 1.6871,
+      "self_sec": 1.6871,
+      "mean_sec": 0.0002,
+      "min_sec": 0.0002,
+      "max_sec": 0.0005
+    },
+    "sampler.generate.batch_update": {
+      "calls": 8159,
+      "total_sec": 1.3529,
+      "self_sec": 1.3529,
+      "mean_sec": 0.0002,
+      "min_sec": 0.0001,
+      "max_sec": 0.0004
+    },
+    "sampler.multinomial": {
+      "calls": 8159,
+      "total_sec": 0.999,
+      "self_sec": 0.999,
+      "mean_sec": 0.0001,
+      "min_sec": 0.0001,
+      "max_sec": 0.0003
+    },
+    "sampler.logsumexp_base": {
+      "calls": 8159,
+      "total_sec": 0.8845,
+      "self_sec": 0.8845,
+      "mean_sec": 0.0001,
+      "min_sec": 0.0001,
+      "max_sec": 0.0028
+    },
+    "sampler.generate.assemble_results": {
+      "calls": 41,
+      "total_sec": 0.8067,
+      "self_sec": 0.8067,
+      "mean_sec": 0.0197,
+      "min_sec": 0.0003,
+      "max_sec": 0.0648
+    },
+    "sampler.tau_mask": {
+      "calls": 8159,
+      "total_sec": 0.6805,
+      "self_sec": 0.6805,
+      "mean_sec": 0.0001,
+      "min_sec": 0.0001,
+      "max_sec": 0.0002
+    },
+    "sampler.logsumexp_scaled": {
+      "calls": 8159,
+      "total_sec": 0.5768,
+      "self_sec": 0.5768,
+      "mean_sec": 0.0001,
+      "min_sec": 0.0001,
+      "max_sec": 0.0002
+    },
+    "sampler.gather_logprob": {
+      "calls": 8159,
+      "total_sec": 0.4691,
+      "self_sec": 0.4691,
+      "mean_sec": 0.0001,
+      "min_sec": 0.0001,
+      "max_sec": 0.0001
+    },
+    "sampler.generate.prepare_tau": {
+      "calls": 8159,
+      "total_sec": 0.3804,
+      "self_sec": 0.3804,
+      "mean_sec": 0.0,
+      "min_sec": 0.0,
+      "max_sec": 0.0025
+    },
+    "sampler.generate.shrink_batch": {
+      "calls": 8152,
+      "total_sec": 0.3691,
+      "self_sec": 0.3691,
+      "mean_sec": 0.0,
+      "min_sec": 0.0,
+      "max_sec": 0.001
+    },
+    "sampler.index_select": {
+      "calls": 8159,
+      "total_sec": 0.303,
+      "self_sec": 0.303,
+      "mean_sec": 0.0,
+      "min_sec": 0.0,
+      "max_sec": 0.0004
+    },
+    "sampler.tau_gate": {
+      "calls": 8159,
+      "total_sec": 0.2994,
+      "self_sec": 0.2994,
+      "mean_sec": 0.0,
+      "min_sec": 0.0,
+      "max_sec": 0.0001
+    },
+    "sampler.prepare_logits": {
+      "calls": 8159,
+      "total_sec": 0.1138,
+      "self_sec": 0.1138,
+      "mean_sec": 0.0,
+      "min_sec": 0.0,
+      "max_sec": 0.0002
+    },
+    "sampler.generate.init": {
+      "calls": 41,
+      "total_sec": 0.0789,
+      "self_sec": 0.0063,
+      "mean_sec": 0.0019,
+      "min_sec": 0.0003,
+      "max_sec": 0.0036
+    },
+    "sampler.prepare_inputs": {
+      "calls": 41,
+      "total_sec": 0.0726,
+      "self_sec": 0.0726,
+      "mean_sec": 0.0018,
+      "min_sec": 0.0002,
+      "max_sec": 0.0035
+    },
+    "sampler.apply_smoothing": {
+      "calls": 8159,
+      "total_sec": 0.0183,
+      "self_sec": 0.0183,
+      "mean_sec": 0.0,
+      "min_sec": 0.0,
+      "max_sec": 0.0002
+    }
+  },
+  "call_tree": {
+    "sampler.generate.init": [
+      "sampler.prepare_inputs"
+    ],
+    "sampler.generate": [
+      "sampler.engine.forward_step",
+      "sampler.generate.assemble_results",
+      "sampler.generate.batch_update",
+      "sampler.generate.init",
+      "sampler.generate.prepare_tau",
+      "sampler.generate.shrink_batch",
+      "sampler.generate.smoothing",
+      "sampler.generate.tau_update",
+      "sampler.sample_step"
+    ],
+    "sampler.engine.forward_step": [
+      "sampler.engine.model_forward"
+    ],
+    "sampler.sample_step": [
+      "sampler.apply_smoothing",
+      "sampler.gather_logprob",
+      "sampler.index_select",
+      "sampler.logsumexp_base",
+      "sampler.logsumexp_scaled",
+      "sampler.multinomial",
+      "sampler.nonzero_sync",
+      "sampler.prepare_logits",
+      "sampler.tau_gate",
+      "sampler.tau_mask",
+      "sampler.top_p_k_subset"
+    ],
+    "sampler.flush_once": [
+      "sampler.generate"
+    ]
+  }
+}

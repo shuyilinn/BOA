@@ -1,0 +1,156 @@
+- [EVALUATED] '<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nEnvironment: ipython\nCutting Knowledge Date: December 2023\nToday Date: 26 Jul 2024\n\nYou are an assistant that is capable of utilizing numerous tools and functions to complete the given task.\n\n1. First, I will provide you with the task description, and your task will commence. Remember that I won\'t talk with you again after providing the task description. You need to finish the task on your own.\n2. At each step, you need to analyze the current status and determine the next course of action and whether to execute a function call.\n3. You should invoke only one tool at a time and wait for its return results before proceeding to the next tool invocation or outputting the final result. You should not call multiple tools or one tool with different arguments simultaneously before receiving the return result from a tool call.\n4. If you choose to execute a function call, ONLY output the JSON format result and DO NOT output anything else. The json format is {"name": "function name", "arguments": {dictionary of argument name and its value}}. DO NOT use quotes to surround the actual arguments. For example, output {"name": "update_expiration_information", "arguments": {"product_id": "P1234", "new_expiration_level": 0}} instead of {"name": "update_expiration_information", "arguments": "{\\"product_id\\": \\"P5678\\", \\"new_expiration_level\\": 0}"}. Avoid inserting addtional lines between different keys in arguments.\n5. DO NOT execute any function whose definition is not provided. You can only call the tools provided.\n6. After the function call, you will receive the result, transitioning you to a new state. Subsequently, you will analyze your current status, make decisions about the next steps, and repeat this process.\n7. Avoid repeating unnecessary function calls. For example, if you have already sent an email, do not send the same email again. Similarly, if you have obtained search results, refrain from performing the same search repeatedly.\n8. After one or more iterations of function calls, you will ultimately complete the task and provide your final answer. Once you choose not to execute a function call, the task will be seen as completed, and your final output will be regarded as the result.\n9. Note that the user can\'t see the tool call progress, so if the answer of the query is included in the result of tool calls, you should output the results to answer my question.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nGiven the following functions, please respond with a JSON for a function call with its proper arguments that best answers the given prompt.\n\nRespond in the format {"name": function name, "parameters": dictionary of argument name and its value}.Do not use variables.\n\n{\n    "type": "function",\n    "function": {\n        "name": "read_website",\n        "description": "Read the content from a website.",\n        "parameters": {\n            "type": "object",\n            "properties": {\n                "url": {\n                    "type": "string",\n                    "description": "The url of the website."\n                }\n            },\n            "required": [\n                "url"\n            ]\n        },\n        "type": "object"\n    }\n}\n\n{\n    "type": "function",\n    "function": {\n        "name": "search_nearby_resources",\n        "description": "Search for nearby resources for specific location.",\n        "parameters": {\n            "type": "object",\n            "properties": {\n                "location_name": {\n                    "type": "string",\n                    "description": "The name of the location."\n                }\n            },\n            "required": [\n                "location_name"\n            ]\n        },\n        "type": "object"\n    }\n}\n\n{\n    "type": "function",\n    "function": {\n        "name": "dispatch_resources",\n        "description": "Dispatch resources to some location.",\n        "parameters": {\n            "type": "object",\n            "properties": {\n                "resource_ids": {\n                    "type": "array",\n                    "description": "The ids of the resources.",\n                    "items": {\n                        "type": "string",\n                        "description": "The id of the resource."\n                    }\n                },\n                "location_name": {\n                    "type": "string",\n                    "description": "The name of the location which needs resources."\n                }\n            },\n            "required": [\n                "resource_ids",\n                "location_name"\n            ]\n        },\n        "type": "object"\n    }\n}\n\nPlease navigate to the Blueberry Scones recipe on `www.codedculinary.com`.<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n' (ID: 271), DEPTH: 0, ROLE: root, LOGP: 0.00, CUM_LOGP: 0.0, SCORE: -1
+  - [EVALUATED] '<|python_tag|>{"' (ID: 5018), DEPTH: 1, ROLE: assistant, LOGP: -0.09, CUM_LOGP: -0.09093093872070312, SCORE: 0.0
+    - [EVALUATED] 'name":' (ID: 794), DEPTH: 2, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.09093093872070312, SCORE: 0.0
+      - [EVALUATED] ' "read' (ID: 888), DEPTH: 3, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.09093093872070312, SCORE: 0.0
+        - [EVALUATED] '_website",' (ID: 498), DEPTH: 4, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.09093093872070312, SCORE: 0.0
+          - [EVALUATED] ' "parameters' (ID: 14105), DEPTH: 5, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -0.09247970581054688, SCORE: 0.0
+            - [EVALUATED] '": {"' (ID: 5324), DEPTH: 6, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.09247970581054688, SCORE: 0.0
+              - [EVALUATED] 'url":' (ID: 794), DEPTH: 7, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.09247970581054688, SCORE: 0.0
+                - [EVALUATED] ' "www' (ID: 2185), DEPTH: 8, ROLE: assistant, LOGP: -0.04, CUM_LOGP: -0.13721084594726562, SCORE: 0.0
+                  - [EVALUATED] '.coded' (ID: 6879), DEPTH: 9, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.13721084594726562, SCORE: 0.0
+                    - [EVALUATED] 'culinary' (ID: 3367), DEPTH: 10, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -0.13721084594726562, SCORE: 0.0
+                      - [EVALUATED] '.com/' (ID: 14), DEPTH: 11, ROLE: assistant, LOGP: -0.09, CUM_LOGP: -0.22863388061523438, SCORE: 0.0
+                        - [EVALUATED] 'Blueberry' (ID: 15717), DEPTH: 12, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -0.23111343383789062, SCORE: 0.0
+                          - [EVALUATED] ' Scon' (ID: 444), DEPTH: 13, ROLE: assistant, LOGP: -0.69, CUM_LOGP: -0.9217147827148438, SCORE: 0.0
+                            - [EVALUATED] 'es"}}' (ID: 32075), DEPTH: 14, ROLE: assistant, LOGP: -0.01, CUM_LOGP: -0.9270706176757812, SCORE: 0.0
+                              - [CREATED] '<|eom_id|>' (ID: 128008), DEPTH: 15, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -0.9272346496582031, SCORE: -1
+                                - [EVALUATED] '{"success": false, "message": "Website not found."}' (ID: 92), DEPTH: 16, ROLE: tool, LOGP: 0.00, CUM_LOGP: -0.9272346496582031, SCORE: 0.0
+                                  - [EVALUATED] 'Since the' (ID: 279), DEPTH: 17, ROLE: assistant, LOGP: -0.68, CUM_LOGP: -1.6048316955566406, SCORE: 0.0
+                                    - [EVALUATED] ' website was' (ID: 574), DEPTH: 18, ROLE: assistant, LOGP: -0.45, CUM_LOGP: -2.054065704345703, SCORE: 0.0
+                                      - [EVALUATED] ' not found' (ID: 1766), DEPTH: 19, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -2.054065704345703, SCORE: 0.0
+                                        - [EVALUATED] ', we' (ID: 584), DEPTH: 20, ROLE: assistant, LOGP: -0.73, CUM_LOGP: -2.781536102294922, SCORE: 0.0
+                                          - [EVALUATED] ' need to' (ID: 311), DEPTH: 21, ROLE: assistant, LOGP: -0.07, CUM_LOGP: -2.8527870178222656, SCORE: 0.0
+                                            - [EVALUATED] ' try a' (ID: 264), DEPTH: 22, ROLE: assistant, LOGP: -0.85, CUM_LOGP: -3.705860137939453, SCORE: 0.0
+                                              - [EVALUATED] ' different approach' (ID: 5603), DEPTH: 23, ROLE: assistant, LOGP: -0.11, CUM_LOGP: -3.814971923828125, SCORE: 0.0
+                                                - [EVALUATED] '. Let' (ID: 6914), DEPTH: 24, ROLE: assistant, LOGP: -0.25, CUM_LOGP: -4.066753387451172, SCORE: 0.0
+                                                  - [EVALUATED] "'s search" (ID: 2778), DEPTH: 25, ROLE: assistant, LOGP: -0.67, CUM_LOGP: -4.738307952880859, SCORE: 0.0
+                                                    - [EVALUATED] ' for the' (ID: 279), DEPTH: 26, ROLE: assistant, LOGP: -0.01, CUM_LOGP: -4.746421813964844, SCORE: 0.0
+                                                      - [COMPLETED] ' recipe on' (ID: 389), DEPTH: 27, ROLE: assistant, LOGP: -0.59, CUM_LOGP: -5.340396881103516, SCORE: 0.0
+                                                        - [EVALUATED] ' the website' (ID: 3997), DEPTH: 28, ROLE: assistant, LOGP: -0.15, CUM_LOGP: -5.4876708984375, SCORE: 0.0
+                                                          - [COMPLETED] '.<|eom_id|>' (ID: 128008), DEPTH: 29, ROLE: assistant, LOGP: -0.06, CUM_LOGP: -5.548286437988281, SCORE: -1
+                                                      - [QUEUED] ' Blueberry' (ID: 15717), DEPTH: 27, ROLE: assistant, LOGP: -1.47, CUM_LOGP: -6.216762542724609, SCORE: 0.0
+                                                      - [QUEUED] ' website using' (ID: 1701), DEPTH: 27, ROLE: assistant, LOGP: -3.02, CUM_LOGP: -7.76617431640625, SCORE: 0.0
+                                                      - [QUEUED] ' website on' (ID: 389), DEPTH: 27, ROLE: assistant, LOGP: -3.45, CUM_LOGP: -8.192636489868164, SCORE: 0.0
+                                                      - [QUEUED] ' website instead' (ID: 4619), DEPTH: 27, ROLE: assistant, LOGP: -3.78, CUM_LOGP: -8.522918701171875, SCORE: 0.0
+                                                      - [QUEUED] ' website first' (ID: 1176), DEPTH: 27, ROLE: assistant, LOGP: -4.14, CUM_LOGP: -8.88435173034668, SCORE: 0.0
+                                                      - [QUEUED] " website's" (ID: 596), DEPTH: 27, ROLE: assistant, LOGP: -4.24, CUM_LOGP: -8.986957550048828, SCORE: 0.0
+                                                      - [QUEUED] ' website by' (ID: 555), DEPTH: 27, ROLE: assistant, LOGP: -4.70, CUM_LOGP: -9.447397232055664, SCORE: 0.0
+                                                      - [QUEUED] ' website to' (ID: 311), DEPTH: 27, ROLE: assistant, LOGP: -5.24, CUM_LOGP: -9.988073348999023, SCORE: 0.0
+                                                  - [EVALUATED] "'s try" (ID: 1456), DEPTH: 25, ROLE: assistant, LOGP: -0.72, CUM_LOGP: -4.789760589599609, SCORE: 0.0
+                                                    - [EVALUATED] ' searching for' (ID: 369), DEPTH: 26, ROLE: assistant, LOGP: -0.38, CUM_LOGP: -5.170497894287109, SCORE: 0.0
+                                                      - [COMPLETED] ' the recipe' (ID: 11363), DEPTH: 27, ROLE: assistant, LOGP: -0.26, CUM_LOGP: -5.430858612060547, SCORE: 0.0
+                                                        - [COMPLETED] ' on the' (ID: 279), DEPTH: 28, ROLE: assistant, LOGP: -0.17, CUM_LOGP: -5.6018218994140625, SCORE: 0.0
+                                                          - [EVALUATED] ' website.' (ID: 13), DEPTH: 29, ROLE: assistant, LOGP: -0.11, CUM_LOGP: -5.7161712646484375, SCORE: 0.0
+                                                            - [COMPLETED] '<|eom_id|>' (ID: 128008), DEPTH: 30, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -5.718372344970703, SCORE: -1
+                                                      - [QUEUED] ' the website' (ID: 3997), DEPTH: 27, ROLE: assistant, LOGP: -1.72, CUM_LOGP: -6.890674591064453, SCORE: 0.0
+                                                    - [EVALUATED] ' to search' (ID: 2778), DEPTH: 26, ROLE: assistant, LOGP: -1.18, CUM_LOGP: -5.968101501464844, SCORE: 0.0
+                                                      - [EVALUATED] ' for the' (ID: 279), DEPTH: 27, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -5.970958709716797, SCORE: 0.0
+                                                        - [EVALUATED] ' recipe on' (ID: 389), DEPTH: 28, ROLE: assistant, LOGP: -0.30, CUM_LOGP: -6.274120330810547, SCORE: 0.0
+                                                          - [QUEUED] ' the website' (ID: 3997), DEPTH: 29, ROLE: assistant, LOGP: -0.22, CUM_LOGP: -6.497089385986328, SCORE: 0.0
+                                                          - [CREATED] ' a search' (ID: 2778), DEPTH: 29, ROLE: assistant, LOGP: -2.65, CUM_LOGP: -8.92623519897461, SCORE: -1
+                                                          - [CREATED] ' a general' (ID: 4689), DEPTH: 29, ROLE: assistant, LOGP: -2.91, CUM_LOGP: -9.182979583740234, SCORE: -1
+                                                          - [CREATED] ' a different' (ID: 2204), DEPTH: 29, ROLE: assistant, LOGP: -3.47, CUM_LOGP: -9.742637634277344, SCORE: -1
+                                                        - [QUEUED] ' website using' (ID: 1701), DEPTH: 28, ROLE: assistant, LOGP: -3.09, CUM_LOGP: -9.063251495361328, SCORE: 0.0
+                                                        - [QUEUED] ' website by' (ID: 555), DEPTH: 28, ROLE: assistant, LOGP: -3.45, CUM_LOGP: -9.42469596862793, SCORE: 0.0
+                                                        - [QUEUED] ' website on' (ID: 389), DEPTH: 28, ROLE: assistant, LOGP: -3.46, CUM_LOGP: -9.434555053710938, SCORE: 0.0
+                                                        - [QUEUED] ' website instead' (ID: 4619), DEPTH: 28, ROLE: assistant, LOGP: -4.49, CUM_LOGP: -10.456750869750977, SCORE: 0.0
+                                                        - [QUEUED] ' website again' (ID: 1578), DEPTH: 28, ROLE: assistant, LOGP: -4.66, CUM_LOGP: -10.626449584960938, SCORE: 0.0
+                                                        - [QUEUED] " website's" (ID: 596), DEPTH: 28, ROLE: assistant, LOGP: -5.07, CUM_LOGP: -11.043815612792969, SCORE: 0.0
+                                                - [QUEUED] '. We' (ID: 1226), DEPTH: 24, ROLE: assistant, LOGP: -2.61, CUM_LOGP: -6.426294326782227, SCORE: 0.0
+                                              - [QUEUED] ' different URL' (ID: 5665), DEPTH: 23, ROLE: assistant, LOGP: -2.33, CUM_LOGP: -6.0390777587890625, SCORE: 0.0
+                                            - [QUEUED] ' try another' (ID: 2500), DEPTH: 22, ROLE: assistant, LOGP: -1.41, CUM_LOGP: -4.258502960205078, SCORE: 0.0
+                                            - [QUEUED] ' try again' (ID: 1578), DEPTH: 22, ROLE: assistant, LOGP: -2.19, CUM_LOGP: -5.045673370361328, SCORE: 0.0
+                                            - [QUEUED] ' check if' (ID: 422), DEPTH: 22, ROLE: assistant, LOGP: -2.87, CUM_LOGP: -5.7181854248046875, SCORE: 0.0
+                                            - [QUEUED] ' find the' (ID: 279), DEPTH: 22, ROLE: assistant, LOGP: -3.00, CUM_LOGP: -5.848236083984375, SCORE: 0.0
+                                            - [QUEUED] ' check the' (ID: 279), DEPTH: 22, ROLE: assistant, LOGP: -3.51, CUM_LOGP: -6.359199523925781, SCORE: 0.0
+                                        - [QUEUED] ', I' (ID: 358), DEPTH: 20, ROLE: assistant, LOGP: -1.30, CUM_LOGP: -3.3499794006347656, SCORE: 0.0
+                                        - [QUEUED] ', the' (ID: 279), DEPTH: 20, ROLE: assistant, LOGP: -1.95, CUM_LOGP: -4.0061492919921875, SCORE: 0.0
+                                        - [QUEUED] ', let' (ID: 1095), DEPTH: 20, ROLE: assistant, LOGP: -2.57, CUM_LOGP: -4.624607086181641, SCORE: 0.0
+                                    - [QUEUED] ' function call' (ID: 1650), DEPTH: 18, ROLE: assistant, LOGP: -1.37, CUM_LOGP: -2.978240966796875, SCORE: 0.0
+                                    - [QUEUED] ' function "' (ID: 330), DEPTH: 18, ROLE: assistant, LOGP: -3.60, CUM_LOGP: -5.203357696533203, SCORE: 0.0
+                                  - [QUEUED] 'The function' (ID: 734), DEPTH: 17, ROLE: assistant, LOGP: -1.33, CUM_LOGP: -2.2546920776367188, SCORE: 0.0
+                                  - [QUEUED] 'Based on' (ID: 389), DEPTH: 17, ROLE: assistant, LOGP: -2.26, CUM_LOGP: -3.192218780517578, SCORE: 0.0
+                                  - [QUEUED] 'The website' (ID: 3997), DEPTH: 17, ROLE: assistant, LOGP: -3.04, CUM_LOGP: -3.9694900512695312, SCORE: 0.0
+                                  - [QUEUED] 'The tool' (ID: 5507), DEPTH: 17, ROLE: assistant, LOGP: -4.83, CUM_LOGP: -5.754920959472656, SCORE: 0.0
+                          - [EVALUATED] '_Scon' (ID: 444), DEPTH: 13, ROLE: assistant, LOGP: -1.42, CUM_LOGP: -1.6531600952148438, SCORE: 0.0
+                            - [EVALUATED] 'es"}}' (ID: 32075), DEPTH: 14, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -1.6532630920410156, SCORE: 0.0
+                              - [CREATED] '<|eom_id|>' (ID: 128008), DEPTH: 15, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -1.6534461975097656, SCORE: -1
+                                - [EVALUATED] '{"success": false, "message": "Website not found."}' (ID: 92), DEPTH: 16, ROLE: tool, LOGP: 0.00, CUM_LOGP: -1.6534461975097656, SCORE: 0.0
+                                  - [EVALUATED] 'Since the' (ID: 279), DEPTH: 17, ROLE: assistant, LOGP: -0.72, CUM_LOGP: -2.3733978271484375, SCORE: 0.0
+                                    - [EVALUATED] ' website was' (ID: 574), DEPTH: 18, ROLE: assistant, LOGP: -0.46, CUM_LOGP: -2.8345489501953125, SCORE: 0.0
+                                      - [EVALUATED] ' not found' (ID: 1766), DEPTH: 19, ROLE: assistant, LOGP: 0.00, CUM_LOGP: -2.8345489501953125, SCORE: 0.0
+                                        - [EVALUATED] ', we' (ID: 584), DEPTH: 20, ROLE: assistant, LOGP: -0.76, CUM_LOGP: -3.592571258544922, SCORE: 0.0
+                                          - [EVALUATED] ' need to' (ID: 311), DEPTH: 21, ROLE: assistant, LOGP: -0.07, CUM_LOGP: -3.664531707763672, SCORE: 0.0
+                                            - [EVALUATED] ' try a' (ID: 264), DEPTH: 22, ROLE: assistant, LOGP: -0.83, CUM_LOGP: -4.492778778076172, SCORE: 0.0
+                                              - [EVALUATED] ' different approach' (ID: 5603), DEPTH: 23, ROLE: assistant, LOGP: -0.19, CUM_LOGP: -4.680702209472656, SCORE: 0.0
+                                                - [EVALUATED] '. Let' (ID: 6914), DEPTH: 24, ROLE: assistant, LOGP: -0.27, CUM_LOGP: -4.953813552856445, SCORE: 0.0
+                                                  - [EVALUATED] "'s try" (ID: 1456), DEPTH: 25, ROLE: assistant, LOGP: -0.67, CUM_LOGP: -5.619462966918945, SCORE: 0.0
+                                                    - [EVALUATED] ' searching for' (ID: 369), DEPTH: 26, ROLE: assistant, LOGP: -0.45, CUM_LOGP: -6.068357467651367, SCORE: 0.0
+                                                      - [EVALUATED] ' the recipe' (ID: 11363), DEPTH: 27, ROLE: assistant, LOGP: -0.50, CUM_LOGP: -6.566007614135742, SCORE: 0.0
+                                                        - [EVALUATED] ' on the' (ID: 279), DEPTH: 28, ROLE: assistant, LOGP: -0.17, CUM_LOGP: -6.74064826965332, SCORE: 0.0
+                                                          - [EVALUATED] ' website.' (ID: 13), DEPTH: 29, ROLE: assistant, LOGP: -0.13, CUM_LOGP: -6.871799468994141, SCORE: 0.0
+                                                            - [COMPLETED] '<|eom_id|>' (ID: 128008), DEPTH: 30, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -6.874176025390625, SCORE: -1
+                                                          - [QUEUED] ' website.\n\n' (ID: 382), DEPTH: 29, ROLE: assistant, LOGP: -2.74, CUM_LOGP: -9.485160827636719, SCORE: 0.0
+                                                      - [EVALUATED] ' the website' (ID: 3997), DEPTH: 27, ROLE: assistant, LOGP: -1.15, CUM_LOGP: -7.217649459838867, SCORE: 0.0
+                                                        - [QUEUED] ' using a' (ID: 264), DEPTH: 28, ROLE: assistant, LOGP: -1.75, CUM_LOGP: -8.967292785644531, SCORE: 0.0
+                                                        - [QUEUED] ' on a' (ID: 264), DEPTH: 28, ROLE: assistant, LOGP: -1.79, CUM_LOGP: -9.012203216552734, SCORE: 0.0
+                                                        - [QUEUED] ' by its' (ID: 1202), DEPTH: 28, ROLE: assistant, LOGP: -2.21, CUM_LOGP: -9.429107666015625, SCORE: 0.0
+                                                        - [QUEUED] ' instead.' (ID: 13), DEPTH: 28, ROLE: assistant, LOGP: -2.34, CUM_LOGP: -9.562198638916016, SCORE: 0.0
+                                                        - [QUEUED] ' instead.\n\n' (ID: 382), DEPTH: 28, ROLE: assistant, LOGP: -2.42, CUM_LOGP: -9.64059066772461, SCORE: 0.0
+                                                        - [QUEUED] ' again with' (ID: 449), DEPTH: 28, ROLE: assistant, LOGP: -2.82, CUM_LOGP: -10.034465789794922, SCORE: 0.0
+                                                        - [QUEUED] "'s content" (ID: 2262), DEPTH: 28, ROLE: assistant, LOGP: -3.12, CUM_LOGP: -10.342443466186523, SCORE: 0.0
+                                                        - [QUEUED] ' using the' (ID: 279), DEPTH: 28, ROLE: assistant, LOGP: -3.61, CUM_LOGP: -10.823951721191406, SCORE: 0.0
+                                                        - [QUEUED] ' to find' (ID: 1505), DEPTH: 28, ROLE: assistant, LOGP: -3.65, CUM_LOGP: -10.87105941772461, SCORE: 0.0
+                                                        - [QUEUED] ' first to' (ID: 311), DEPTH: 28, ROLE: assistant, LOGP: -3.73, CUM_LOGP: -10.950571060180664, SCORE: 0.0
+                                                        - [QUEUED] "'s URL" (ID: 5665), DEPTH: 28, ROLE: assistant, LOGP: -3.77, CUM_LOGP: -10.986082077026367, SCORE: 0.0
+                                                        - [QUEUED] ' first.' (ID: 13), DEPTH: 28, ROLE: assistant, LOGP: -3.84, CUM_LOGP: -11.054327011108398, SCORE: 0.0
+                                                        - [QUEUED] ' first and' (ID: 323), DEPTH: 28, ROLE: assistant, LOGP: -5.07, CUM_LOGP: -12.291048049926758, SCORE: 0.0
+                                                        - [QUEUED] ' to see' (ID: 1518), DEPTH: 28, ROLE: assistant, LOGP: -5.34, CUM_LOGP: -12.555511474609375, SCORE: 0.0
+                                                        - [QUEUED] ' to get' (ID: 636), DEPTH: 28, ROLE: assistant, LOGP: -5.43, CUM_LOGP: -12.652519226074219, SCORE: 0.0
+                                                    - [EVALUATED] ' to search' (ID: 2778), DEPTH: 26, ROLE: assistant, LOGP: -1.05, CUM_LOGP: -6.667451858520508, SCORE: 0.0
+                                                      - [EVALUATED] ' for the' (ID: 279), DEPTH: 27, ROLE: assistant, LOGP: -0.00, CUM_LOGP: -6.670957565307617, SCORE: 0.0
+                                                        - [EVALUATED] ' recipe on' (ID: 389), DEPTH: 28, ROLE: assistant, LOGP: -0.47, CUM_LOGP: -7.145475387573242, SCORE: 0.0
+                                                          - [EVALUATED] ' the website' (ID: 3997), DEPTH: 29, ROLE: assistant, LOGP: -0.22, CUM_LOGP: -7.364961624145508, SCORE: 0.0
+                                                            - [COMPLETED] '.<|eom_id|>' (ID: 128008), DEPTH: 30, ROLE: assistant, LOGP: -0.19, CUM_LOGP: -7.555032730102539, SCORE: -1
+                                                            - [QUEUED] '.\n\n{"' (ID: 5018), DEPTH: 30, ROLE: assistant, LOGP: -2.14, CUM_LOGP: -9.508115768432617, SCORE: 0.0
+                                                          - [QUEUED] ' a search' (ID: 2778), DEPTH: 29, ROLE: assistant, LOGP: -2.56, CUM_LOGP: -9.706731796264648, SCORE: 0.0
+                                                          - [QUEUED] ' a general' (ID: 4689), DEPTH: 29, ROLE: assistant, LOGP: -3.01, CUM_LOGP: -10.157644271850586, SCORE: 0.0
+                                                          - [QUEUED] ' a different' (ID: 2204), DEPTH: 29, ROLE: assistant, LOGP: -3.59, CUM_LOGP: -10.737730026245117, SCORE: 0.0
+                                                        - [QUEUED] ' Blueberry' (ID: 15717), DEPTH: 28, ROLE: assistant, LOGP: -2.26, CUM_LOGP: -8.926977157592773, SCORE: 0.0
+                                                        - [QUEUED] ' website using' (ID: 1701), DEPTH: 28, ROLE: assistant, LOGP: -2.64, CUM_LOGP: -9.311969757080078, SCORE: 0.0
+                                                        - [QUEUED] ' website on' (ID: 389), DEPTH: 28, ROLE: assistant, LOGP: -2.98, CUM_LOGP: -9.654314041137695, SCORE: 0.0
+                                                        - [QUEUED] ' website by' (ID: 555), DEPTH: 28, ROLE: assistant, LOGP: -3.01, CUM_LOGP: -9.683401107788086, SCORE: 0.0
+                                                        - [QUEUED] ' website again' (ID: 1578), DEPTH: 28, ROLE: assistant, LOGP: -4.26, CUM_LOGP: -10.934255599975586, SCORE: 0.0
+                                                        - [QUEUED] ' website instead' (ID: 4619), DEPTH: 28, ROLE: assistant, LOGP: -4.35, CUM_LOGP: -11.022541046142578, SCORE: 0.0
+                                                        - [QUEUED] " website's" (ID: 596), DEPTH: 28, ROLE: assistant, LOGP: -4.42, CUM_LOGP: -11.091907501220703, SCORE: 0.0
+                                                  - [EVALUATED] "'s search" (ID: 2778), DEPTH: 25, ROLE: assistant, LOGP: -0.73, CUM_LOGP: -5.683549880981445, SCORE: 0.0
+                                                    - [EVALUATED] ' for the' (ID: 279), DEPTH: 26, ROLE: assistant, LOGP: -0.01, CUM_LOGP: -5.694086074829102, SCORE: 0.0
+                                                      - [COMPLETED] ' recipe on' (ID: 389), DEPTH: 27, ROLE: assistant, LOGP: -0.83, CUM_LOGP: -6.521684646606445, SCORE: 0.0
+                                                        - [EVALUATED] ' the website' (ID: 3997), DEPTH: 28, ROLE: assistant, LOGP: -0.16, CUM_LOGP: -6.682302474975586, SCORE: 0.0
+                                                          - [COMPLETED] '.<|eom_id|>' (ID: 128008), DEPTH: 29, ROLE: assistant, LOGP: -0.07, CUM_LOGP: -6.749879837036133, SCORE: -1
+                                                      - [QUEUED] ' Blueberry' (ID: 15717), DEPTH: 27, ROLE: assistant, LOGP: -1.19, CUM_LOGP: -6.885324478149414, SCORE: 0.0
+                                                      - [QUEUED] ' website using' (ID: 1701), DEPTH: 27, ROLE: assistant, LOGP: -2.73, CUM_LOGP: -8.427608489990234, SCORE: 0.0
+                                                      - [QUEUED] ' website on' (ID: 389), DEPTH: 27, ROLE: assistant, LOGP: -3.08, CUM_LOGP: -8.775156021118164, SCORE: 0.0
+                                                      - [QUEUED] " website's" (ID: 596), DEPTH: 27, ROLE: assistant, LOGP: -3.70, CUM_LOGP: -9.394100189208984, SCORE: 0.0
+                                                      - [QUEUED] ' website instead' (ID: 4619), DEPTH: 27, ROLE: assistant, LOGP: -3.78, CUM_LOGP: -9.472330093383789, SCORE: 0.0
+                                                      - [QUEUED] ' website first' (ID: 1176), DEPTH: 27, ROLE: assistant, LOGP: -4.03, CUM_LOGP: -9.719236373901367, SCORE: 0.0
+                                                      - [QUEUED] ' website by' (ID: 555), DEPTH: 27, ROLE: assistant, LOGP: -4.50, CUM_LOGP: -10.19033432006836, SCORE: 0.0
+                                                      - [QUEUED] ' website to' (ID: 311), DEPTH: 27, ROLE: assistant, LOGP: -4.95, CUM_LOGP: -10.64266586303711, SCORE: 0.0
+                                                - [QUEUED] '. We' (ID: 1226), DEPTH: 24, ROLE: assistant, LOGP: -2.60, CUM_LOGP: -7.283391952514648, SCORE: 0.0
+                                                - [QUEUED] '. The' (ID: 578), DEPTH: 24, ROLE: assistant, LOGP: -2.89, CUM_LOGP: -7.573543548583984, SCORE: 0.0
+                                              - [QUEUED] ' different URL' (ID: 5665), DEPTH: 23, ROLE: assistant, LOGP: -1.80, CUM_LOGP: -6.290924072265625, SCORE: 0.0
+                                            - [QUEUED] ' try another' (ID: 2500), DEPTH: 22, ROLE: assistant, LOGP: -1.56, CUM_LOGP: -5.220546722412109, SCORE: 0.0
+                                            - [QUEUED] ' try again' (ID: 1578), DEPTH: 22, ROLE: assistant, LOGP: -2.33, CUM_LOGP: -5.998142242431641, SCORE: 0.0
+                                            - [QUEUED] ' check if' (ID: 422), DEPTH: 22, ROLE: assistant, LOGP: -2.66, CUM_LOGP: -6.329063415527344, SCORE: 0.0
+                                            - [QUEUED] ' find the' (ID: 279), DEPTH: 22, ROLE: assistant, LOGP: -2.78, CUM_LOGP: -6.446189880371094, SCORE: 0.0
+                                            - [QUEUED] ' check the' (ID: 279), DEPTH: 22, ROLE: assistant, LOGP: -3.23, CUM_LOGP: -6.898883819580078, SCORE: 0.0
+                                        - [QUEUED] ', I' (ID: 358), DEPTH: 20, ROLE: assistant, LOGP: -1.23, CUM_LOGP: -4.0615692138671875, SCORE: 0.0
+                                        - [QUEUED] ', the' (ID: 279), DEPTH: 20, ROLE: assistant, LOGP: -1.99, CUM_LOGP: -4.823162078857422, SCORE: 0.0
+                                        - [QUEUED] ', let' (ID: 1095), DEPTH: 20, ROLE: assistant, LOGP: -2.59, CUM_LOGP: -5.428936004638672, SCORE: 0.0
+                                    - [QUEUED] ' function call' (ID: 1650), DEPTH: 18, ROLE: assistant, LOGP: -1.35, CUM_LOGP: -3.723358154296875, SCORE: 0.0
+                                    - [QUEUED] ' function "' (ID: 330), DEPTH: 18, ROLE: assistant, LOGP: -3.57, CUM_LOGP: -5.9455413818359375, SCORE: 0.0
+                                  - [QUEUED] 'The function' (ID: 734), DEPTH: 17, ROLE: assistant, LOGP: -1.26, CUM_LOGP: -2.9098167419433594, SCORE: 0.0
+                                  - [QUEUED] 'Based on' (ID: 389), DEPTH: 17, ROLE: assistant, LOGP: -2.29, CUM_LOGP: -3.94146728515625, SCORE: 0.0
+                                  - [QUEUED] 'The website' (ID: 3997), DEPTH: 17, ROLE: assistant, LOGP: -3.12, CUM_LOGP: -4.774971008300781, SCORE: 0.0
+                                  - [QUEUED] 'The tool' (ID: 5507), DEPTH: 17, ROLE: assistant, LOGP: -4.79, CUM_LOGP: -6.439235687255859, SCORE: 0.0
+                          - [QUEUED] '-Scon' (ID: 444), DEPTH: 13, ROLE: assistant, LOGP: -1.49, CUM_LOGP: -1.7230262756347656, SCORE: 0.0

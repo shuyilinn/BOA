@@ -1,0 +1,31 @@
+Profile session: 20260330-115511_single_turn_Llama-2-7b-chat-hf_hf_p0.9_k-1_t0.6_lh0.0001_cs1_greedy_cacheon_sbufon_jbufon_topkon_refPaton_refJudgeon
+-------------------------------------------------------------------------------------------------------------------------
+Function                                      Calls    Total(s)     Self(s)     Self%     Mean(s)      Min(s)      Max(s)
+-------------------------------------------------------------------------------------------------------------------------
+sampler.flush_once                               28     540.844       0.380      0.1%      19.316       6.771      30.508
+└── sampler.generate                             49     550.488       0.308      0.1%      11.234       1.017      27.241
+    ├── sampler.engine.forward_step                6114     276.527       0.323      0.1%       0.045       0.018      13.736
+    │   └── sampler.engine.model_forward               6114     276.204     276.204     49.8%       0.045       0.018      13.736
+    ├── sampler.generate.smoothing                 5634     141.839     141.839     25.6%       0.025       0.000      10.780
+    ├── sampler.sample_step                        5634     140.562       0.628      0.1%       0.025       0.001       0.143
+    │   ├── sampler.nonzero_sync                       5634     134.274     134.274     24.2%       0.024       0.000       0.139
+    │   ├── sampler.top_p_k_subset                     5634       1.777       1.777      0.3%       0.000       0.000       0.001
+    │   ├── sampler.logsumexp_base                     5634       1.190       1.190      0.2%       0.000       0.000       0.003
+    │   ├── sampler.multinomial                        5634       0.786       0.786      0.1%       0.000       0.000       0.000
+    │   ├── sampler.tau_mask                           5634       0.547       0.547      0.1%       0.000       0.000       0.000
+    │   ├── sampler.logsumexp_scaled                   5634       0.439       0.439      0.1%       0.000       0.000       0.000
+    │   ├── sampler.gather_logprob                     5634       0.353       0.353      0.1%       0.000       0.000       0.000
+    │   ├── sampler.tau_gate                           5634       0.230       0.230      0.0%       0.000       0.000       0.000
+    │   ├── sampler.index_select                       5634       0.228       0.228      0.0%       0.000       0.000       0.000
+    │   ├── sampler.prepare_logits                     5634       0.092       0.092      0.0%       0.000       0.000       0.000
+    │   └── sampler.apply_smoothing                    5634       0.016       0.016      0.0%       0.000       0.000       0.000
+    ├── sampler.generate.tau_update                5634       1.261       1.261      0.2%       0.000       0.000       0.001
+    ├── sampler.generate.batch_update              5634       1.034       1.034      0.2%       0.000       0.000       0.000
+    ├── sampler.generate.shrink_batch              5598       0.451       0.451      0.1%       0.000       0.000       0.001
+    ├── sampler.generate.assemble_results            49       0.446       0.446      0.1%       0.009       0.000       0.065
+    ├── sampler.generate.prepare_tau               5634       0.315       0.315      0.1%       0.000       0.000       0.006
+    └── sampler.generate.init                        49       0.099       0.008      0.0%       0.002       0.000       0.005
+        └── sampler.prepare_inputs                       49       0.091       0.091      0.0%       0.002       0.000       0.005
+
+judger.flush_once                                28      13.312      13.312      2.4%       0.475       0.269       1.072
+-------------------------------------------------------------------------------------------------------------------------

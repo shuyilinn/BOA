@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOA Web Interface</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242736;
+    --border: #2e3142;
+    --text: #e1e4ed;
+    --text2: #8b8fa3;
+    --accent: #6c7ee1;
+    --danger: #e15c5c;
+    --success: #5ce19e;
+    --warning: #e1c15c;
+    --blue: #5c9ee1;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    padding: 12px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  header h1 { font-size: 16px; font-weight: 600; }
+  #status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    background: var(--surface2);
+    color: var(--text2);
+  }
+  #status-badge.running { background: #1a3a2a; color: var(--success); }
+  #status-badge.error { background: #3a1a1a; color: var(--danger); }
+  #status-badge.loading { background: #2a2a1a; color: var(--warning); }
+
+  .main-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* --- Config Panel --- */
+  .config-panel {
+    width: 320px;
+    min-width: 280px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px;
+    flex-shrink: 0;
+  }
+  .config-panel h2 {
+    font-size: 13px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--accent);
+  }
+  .field textarea { resize: vertical; min-height: 60px; }
+  #prompt-input { min-height: 100px; }
+
+  .radio-group { display: flex; flex-direction: column; gap: 6px; }
+  .radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .radio-group input[type="radio"] { accent-color: var(--accent); }
+
+  .param-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-danger { background: var(--danger); color: white; margin-top: 8px; }
+
+  /* --- Right panel --- */
+  .right-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* --- Tree --- */
+  .tree-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .tree-container svg { width: 100%; height: 100%; }
+  .node circle {
+    stroke-width: 2px;
+    cursor: pointer;
+    transition: r 0.2s;
+  }
+  .node circle:hover { r: 8; }
+  .node text {
+    font-size: 10px;
+    fill: var(--text2);
+  }
+  .link {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 1.5px;
+  }
+  .link.jailbreak-path { stroke: var(--danger); stroke-width: 2.5px; }
+
+  /* --- Legend --- */
+  .tree-legend {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 11px;
+    color: var(--text2);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .tree-legend .legend-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .tree-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tree-legend .legend-circle {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .tree-legend .legend-line {
+    width: 20px;
+    height: 0;
+    border-top: 2.5px solid;
+    flex-shrink: 0;
+  }
+
+  /* --- Node tooltip --- */
+  #node-tooltip {
+    position: fixed;
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    max-width: 450px;
+    max-height: 80vh;
+    overflow-y: auto;
+    font-size: 12px;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  #node-tooltip .tt-label { color: var(--text2); font-size: 11px; }
+  #node-tooltip .tt-value { color: var(--text); margin-bottom: 6px; word-break: break-all; }
+  #node-tooltip .tt-text {
+    max-height: 150px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    background: var(--surface2);
+    padding: 6px;
+    border-radius: 4px;
+    margin-top: 4px;
+  }
+  #node-tooltip .tt-samples {
+    margin-top: 6px;
+  }
+  #node-tooltip .tt-sample-item {
+    margin-bottom: 4px;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  #node-tooltip .tt-sample-item:nth-child(odd) {
+    background: var(--surface2);
+  }
+  #node-tooltip .tt-sample-header {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    font-size: 11px;
+    cursor: pointer;
+    user-select: none;
+    line-height: 1.4;
+  }
+  #node-tooltip .tt-sample-header:hover {
+    background: rgba(255,255,255,0.04);
+  }
+  #node-tooltip .tt-sample-header > span {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  #node-tooltip .tt-sample-header > span.tt-sample-preview {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #node-tooltip .tt-sample-toggle {
+    color: var(--text2);
+    font-size: 9px;
+    transition: transform 0.15s;
+    width: 10px;
+    flex-shrink: 0;
+  }
+  #node-tooltip .tt-sample-toggle.open {
+    transform: rotate(90deg);
+  }
+  #node-tooltip .tt-sample-score {
+    font-weight: 600;
+    min-width: 24px;
+  }
+  #node-tooltip .tt-sample-badge {
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  #node-tooltip .tt-sample-text {
+    display: none;
+    font-size: 11px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    background: var(--bg);
+    padding: 6px;
+    margin: 0 6px 4px 6px;
+    border-radius: 4px;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+  #node-tooltip .tt-sample-text.open {
+    display: block;
+  }
+  .badge-safe { background: #1a3a2a; color: var(--success); }
+  .badge-unsafe { background: #3a1a1a; color: var(--danger); }
+
+  /* --- Results Panel --- */
+  .results-panel {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    max-height: 35%;
+    overflow-y: auto;
+    padding: 16px 20px;
+    flex-shrink: 0;
+  }
+  .results-panel h2 {
+    font-size: 13px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .result-card {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .result-card.unsafe { border-left: 3px solid var(--danger); }
+  .result-card.safe { border-left: 3px solid var(--success); }
+  .result-card .rc-label { font-size: 11px; color: var(--text2); }
+  .result-card .rc-value { font-size: 13px; margin-bottom: 4px; }
+  .result-card .rc-text-wrap {
+    position: relative;
+    margin-top: 4px;
+  }
+  .result-card .rc-text {
+    font-size: 12px;
+    white-space: pre-wrap;
+    max-height: 80px;
+    overflow-y: auto;
+    background: var(--bg);
+    padding: 6px;
+    border-radius: 4px;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text2);
+    font-size: 11px;
+    padding: 2px 6px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .rc-text-wrap:hover .copy-btn { opacity: 1; }
+  .copy-btn:hover { color: var(--text); border-color: var(--accent); }
+
+  .stats-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .stat-item .stat-label { font-size: 11px; color: var(--text2); }
+  .stat-item .stat-value { font-size: 14px; font-weight: 600; }
+
+  .step-info {
+    font-size: 12px;
+    color: var(--text2);
+    padding: 4px 20px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  /* --- Queue Panel --- */
+  .queue-panel {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    max-height: 30%;
+    display: flex;
+    flex-direction: column;
+  }
+  .queue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 20px;
+    font-size: 12px;
+    color: var(--text2);
+    cursor: pointer;
+    user-select: none;
+  }
+  .queue-header:hover { color: var(--text); }
+  .queue-body {
+    overflow-y: auto;
+    flex: 1;
+  }
+  .queue-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .queue-table th {
+    position: sticky;
+    top: 0;
+    background: var(--surface2);
+    color: var(--text2);
+    font-weight: 600;
+    text-align: left;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .queue-table th[data-info] {
+    position: sticky;
+    cursor: help;
+    text-decoration: underline dotted var(--text2);
+    text-underline-offset: 3px;
+  }
+  .queue-table th[data-info]:hover::after {
+    content: attr(data-info);
+    position: absolute;
+    left: 0;
+    top: 100%;
+    z-index: 20;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 400;
+    white-space: normal;
+    width: max-content;
+    max-width: 260px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    pointer-events: none;
+  }
+  .queue-table td {
+    padding: 3px 8px;
+    color: var(--text);
+    border-bottom: 1px solid var(--bg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
+  .queue-table tr { cursor: pointer; }
+  .queue-table tr:hover td { background: var(--surface2); }
+  .queue-table tr.queue-active td { background: rgba(108,126,225,0.15); }
+  @keyframes queue-pulse {
+    0%, 100% { stroke-opacity: 1; r: 12; }
+    50% { stroke-opacity: 0.4; r: 16; }
+  }
+
+  /* Resizers */
+  .resizer {
+    background: var(--border);
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .resizer:hover, .resizer.active {
+    background: var(--accent);
+  }
+  .resizer-v {
+    width: 4px;
+    cursor: col-resize;
+  }
+  .resizer-h {
+    height: 4px;
+    cursor: row-resize;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>BOA Web Interface</h1>
+  <span id="status-badge">Idle</span>
+</header>
+
+<div class="main-layout">
+  <!-- Config Panel -->
+  <div class="config-panel">
+    <h2>Configuration</h2>
+
+    <div class="field" id="api-server-field">
+      <label>API Server URL</label>
+      <input type="text" id="api-server-url" placeholder="http://your-server:8000" onchange="saveApiBase(this.value)">
+    </div>
+
+    <div class="field">
+      <label>Prompt</label>
+      <textarea id="prompt-input" placeholder="Enter the prompt to test..."></textarea>
+    </div>
+
+    <div class="field">
+      <label>Model</label>
+      <select id="model-select"></select>
+    </div>
+
+    <div class="param-row">
+      <div class="field">
+        <label>Temperature</label>
+        <input type="number" id="temperature" step="0.1" min="0" max="2">
+      </div>
+      <div class="field">
+        <label>Top-p</label>
+        <input type="number" id="top-p" step="0.05" min="0" max="1">
+      </div>
+      <div class="field">
+        <label>Top-k</label>
+        <input type="number" id="top-k" step="1" min="1" max="1000">
+      </div>
+    </div>
+
+    <div class="param-row">
+      <div class="field">
+        <label>Likelihood</label>
+        <input type="number" id="likelihood" step="0.0001" min="0" max="1" value="0.0001">
+      </div>
+      <div class="field">
+        <label>Chunk Size</label>
+        <input type="number" id="chunk-size" step="1" min="1" value="2">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Search Strategy</label>
+      <select id="search-strategy">
+        <option value="greedy" selected>Greedy</option>
+        <option value="phase_aware">Phase-Aware (Diversity + Exploitation)</option>
+        <option value="mcts">MCTS (UCT Selection)</option>
+      </select>
+    </div>
+
+    <div class="field phase-aware-params" style="display:none">
+      <label>Min Depth (forced shallow)</label>
+      <input type="number" id="pa-min-depth" step="1" min="1" max="10" value="4">
+    </div>
+    <div class="field phase-aware-params" style="display:none">
+      <label>Shallow Samples</label>
+      <input type="number" id="pa-shallow-samples" step="1" min="1" max="50" value="20">
+    </div>
+    <div class="field phase-aware-params" style="display:none">
+      <label>Shallow Priority Score</label>
+      <input type="number" id="pa-shallow-score" step="100" min="1000" max="20000" value="8000">
+    </div>
+    <div class="field phase-aware-params" style="display:none">
+      <label>Subtree Top-K</label>
+      <input type="number" id="pa-subtree-top-k" step="1" min="1" max="20" value="1">
+    </div>
+    <div class="field phase-aware-params" style="display:none">
+      <label>Search Temperature</label>
+      <input type="number" id="pa-search-temperature" step="0.1" min="0.01" max="10" value="2">
+    </div>
+
+
+    <div class="field mcts-params" style="display:none">
+      <label>Exploration Constant (C)</label>
+      <input type="number" id="mcts-exploration-constant" step="0.1" min="0.1" max="10" value="1.414">
+    </div>
+
+    <div class="field">
+      <label>Time Limit (seconds)</label>
+      <input type="number" id="time-limit" step="10" min="10" max="3600" value="600">
+    </div>
+
+    <div class="field">
+      <label>Judger</label>
+      <select id="judger-select">
+        <option value="nuanced" selected>Nuanced Judger</option>
+        <option value="agent_safety">Agent Safety Judger</option>
+        <option value="custom">Custom Judger</option>
+      </select>
+    </div>
+
+    <div class="field" id="custom-judger-field" style="display:none">
+      <label>Custom Judger Prompt</label>
+      <textarea id="custom-judger-prompt" placeholder="Enter your judger prompt..."></textarea>
+    </div>
+
+    <button class="btn btn-primary" id="run-btn" onclick="startRun()">Run</button>
+    <button class="btn btn-danger" id="cancel-btn" onclick="cancelRun()" disabled>Cancel</button>
+  </div>
+
+  <!-- Vertical Resizer -->
+  <div class="resizer resizer-v" id="resizer-v"></div>
+
+  <!-- Right Panel -->
+  <div class="right-panel">
+    <div class="tree-container" id="tree-container">
+      <svg id="tree-svg"></svg>
+      <div class="tree-legend">
+        <div class="legend-title">Legend</div>
+        <div class="legend-item"><span class="legend-circle" style="background:#8b8fa3"></span>Created</div>
+        <div class="legend-item"><span class="legend-circle" style="background:#5c9ee1"></span>Queued</div>
+        <div class="legend-item"><span class="legend-circle" style="background:#b07ce1"></span>Exploring / Expanding</div>
+        <div class="legend-item"><span class="legend-circle" style="background:#e1c15c"></span>Evaluated</div>
+        <div class="legend-item"><span class="legend-circle" style="background:#5ce19e"></span>Completed</div>
+        <div class="legend-item"><span class="legend-circle" style="background:#e15c5c"></span>Jailbreak</div>
+        <div class="legend-item"><span class="legend-circle" style="background:#555"></span>Cut</div>
+        <div class="legend-item"><span class="legend-line" style="border-color:#e15c5c"></span>Jailbreak Path</div>
+      </div>
+    </div>
+    <!-- Horizontal Resizer -->
+    <div class="resizer resizer-h" id="resizer-h"></div>
+    <div class="step-info" id="step-info">Ready</div>
+    <div class="queue-panel" id="queue-panel" style="display:none">
+      <div class="queue-header" onclick="toggleQueuePanel()">
+        <span id="queue-title">Priority Queue</span> (<span id="queue-count">0</span>)
+        <span id="queue-toggle">&#9660;</span>
+      </div>
+      <div class="queue-body" id="queue-body">
+        <table class="queue-table">
+          <thead><tr><th data-info="Priority rank (sorted by Eff descending)">#</th><th data-info="Node depth in tree">Depth</th><th data-info="Raw judger scores per sample">Scores</th><th data-info="mean(scores) — average of all judger sample scores">Mean</th><th data-info="(1-α)×mean + α×top2_mean — tail-aware selection score, α default 0.3">Sel</th><th data-info="Actual queue priority — depends on strategy. Greedy: sel. BOA: sel×d×s. Gradient: sel×g">Eff</th><th data-info="Scoring factors. d: depth decay (BOA). s: stagnation penalty (BOA). g: gradient factor (Gradient, >1=improving, <1=stagnant)">Factors</th><th data-info="Node text preview">Text</th></tr></thead>
+          <tbody id="queue-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="results-panel" id="results-panel" style="display:none"></div>
+  </div>
+</div>
+
+<!-- Node Tooltip -->
+<div id="node-tooltip"></div>
+
+<script>
+// =========================================================================
+// State
+// =========================================================================
+// API base URL: auto-detect or set manually for GitHub Pages deployment
+// When hosted on GitHub Pages, set this to your server's public URL, e.g.:
+//   const API_BASE = 'https://your-server.com:8000';
+// When running locally, leave as empty string to use relative paths.
+const API_BASE = window.location.hostname === 'localhost' || window.location.port === '8000'
+  ? ''  // local dev: same origin
+  : (localStorage.getItem('boa_api_base') || '');
+
+let currentRunId = null;
+let lastRunId = null;
+let eventSource = null;
+let treeData = null;
+let models = [];
+
+// =========================================================================
+// API server config
+// =========================================================================
+function saveApiBase(url) {
+  const trimmed = url.replace(/\/+$/, '');  // strip trailing slashes
+  localStorage.setItem('boa_api_base', trimmed);
+  window.location.reload();  // reload to apply
+}
+
+// =========================================================================
+// Init
+// =========================================================================
+async function init() {
+  // Show API server field and populate value
+  const apiField = document.getElementById('api-server-field');
+  const apiInput = document.getElementById('api-server-url');
+  apiInput.value = API_BASE;
+  // Hide field when running on same origin (local dev)
+  if (API_BASE === '' && (window.location.hostname === 'localhost' || window.location.port === '8000')) {
+    apiField.style.display = 'none';
+  }
+
+  // Load models
+  const res = await fetch(`${API_BASE}/api/models`);
+  const data = await res.json();
+  models = data.models;
+  const sel = document.getElementById('model-select');
+  models.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = m.id.split('/').pop();
+    sel.appendChild(opt);
+  });
+  // Set defaults from first model
+  if (models.length > 0) updateModelDefaults(models[0].id);
+
+  sel.addEventListener('change', () => updateModelDefaults(sel.value));
+
+  // Judger select toggle
+  const judgerSelect = document.getElementById('judger-select');
+  judgerSelect.addEventListener('change', updateJudgerFieldVisibility);
+  updateJudgerFieldVisibility();
+
+  // Search strategy toggle for BOA params
+  const strategySelect = document.getElementById('search-strategy');
+  strategySelect.addEventListener('change', updateStrategyFieldVisibility);
+  updateStrategyFieldVisibility();
+
+  initTreeSVG();
+}
+
+function updateStrategyFieldVisibility() {
+  const strategy = document.getElementById('search-strategy').value;
+  document.querySelectorAll('.phase-aware-params').forEach(el => {
+    el.style.display = strategy === 'phase_aware' ? 'block' : 'none';
+  });
+  document.querySelectorAll('.mcts-params').forEach(el => {
+    el.style.display = strategy === 'mcts' ? 'block' : 'none';
+  });
+}
+
+function updateJudgerFieldVisibility() {
+  document.getElementById('custom-judger-field').style.display =
+    document.getElementById('judger-select').value === 'custom' ? 'block' : 'none';
+}
+
+function updateModelDefaults(modelId) {
+  const m = models.find(x => x.id === modelId);
+  if (!m) return;
+  document.getElementById('temperature').value = m.defaults.temperature;
+  document.getElementById('top-p').value = m.defaults.top_p;
+  document.getElementById('top-k').value = m.defaults.top_k;
+}
+
+// =========================================================================
+// Run control
+// =========================================================================
+async function startRun() {
+  const prompt = document.getElementById('prompt-input').value.trim();
+  if (!prompt) { alert('Please enter a prompt'); return; }
+
+  const body = {
+    prompt,
+    model: document.getElementById('model-select').value,
+    temperature: parseFloat(document.getElementById('temperature').value),
+    top_p: parseFloat(document.getElementById('top-p').value),
+    top_k: parseInt(document.getElementById('top-k').value),
+    likelihood: parseFloat(document.getElementById('likelihood').value),
+    search_strategy: document.getElementById('search-strategy').value,
+    pa_min_depth: parseInt(document.getElementById('pa-min-depth').value),
+    pa_shallow_samples: parseInt(document.getElementById('pa-shallow-samples').value),
+    pa_shallow_score: parseFloat(document.getElementById('pa-shallow-score').value),
+    pa_subtree_top_k: parseInt(document.getElementById('pa-subtree-top-k').value),
+    pa_search_temperature: parseFloat(document.getElementById('pa-search-temperature').value),
+    mcts_exploration_constant: parseFloat(document.getElementById('mcts-exploration-constant').value),
+    judger_type: document.getElementById('judger-select').value,
+    custom_judger_prompt: document.getElementById('custom-judger-prompt').value,
+    time_limit_sec: parseFloat(document.getElementById('time-limit').value),
+    chunk_size: parseInt(document.getElementById('chunk-size').value),
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/api/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.detail || 'Failed to start run');
+      return;
+    }
+    const data = await res.json();
+    currentRunId = data.run_id;
+    lastRunId = data.run_id;
+
+    // UI state
+    document.getElementById('run-btn').disabled = true;
+    document.getElementById('cancel-btn').disabled = false;
+    document.getElementById('results-panel').style.display = 'none';
+    document.getElementById('results-panel').innerHTML = '';
+    document.getElementById('queue-panel').style.display = 'none';
+    document.getElementById('queue-tbody').innerHTML = '';
+    setStatus('loading', 'Loading Model...');
+    clearTree();
+
+    // Connect SSE
+    connectSSE(currentRunId);
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+async function cancelRun() {
+  if (!currentRunId) return;
+  await fetch(`${API_BASE}/api/run/${currentRunId}/cancel`, { method: 'POST' });
+  setStatus('idle', 'Cancelled');
+  cleanupRun();
+}
+
+function cleanupRun() {
+  if (eventSource) { eventSource.close(); eventSource = null; }
+  document.getElementById('run-btn').disabled = false;
+  document.getElementById('cancel-btn').disabled = true;
+}
+
+// =========================================================================
+// SSE
+// =========================================================================
+function connectSSE(runId) {
+  if (eventSource) eventSource.close();
+  eventSource = new EventSource(`${API_BASE}/api/run/${runId}/stream`);
+
+  eventSource.addEventListener('status', e => {
+    const d = JSON.parse(e.data);
+    if (d.status === 'loading_model') setStatus('loading', 'Loading Model...');
+    else if (d.status === 'running') setStatus('running', 'Running');
+  });
+
+  eventSource.addEventListener('step_info', e => {
+    const d = JSON.parse(e.data);
+    document.getElementById('step-info').textContent =
+      `Step ${d.step} | Nodes: ${d.nodes_created} | Max Depth: ${d.max_depth} | Elapsed: ${d.elapsed_sec}s`;
+  });
+
+  eventSource.addEventListener('tree_update', e => {
+    const d = JSON.parse(e.data);
+    treeData = d;
+    renderTree(d);
+  });
+
+  eventSource.addEventListener('result', e => {
+    const d = JSON.parse(e.data);
+    showResults(d);
+  });
+
+  eventSource.addEventListener('run_error', e => {
+    const d = JSON.parse(e.data);
+    setStatus('error', 'Error: ' + d.message);
+  });
+
+  eventSource.addEventListener('done', () => {
+    setStatus('idle', 'Completed');
+    cleanupRun();
+  });
+
+  eventSource.onerror = () => {
+    // Only show error if we didn't already get a 'done' event
+    if (eventSource && eventSource.readyState === EventSource.CLOSED) {
+      cleanupRun();
+    }
+  };
+}
+
+// =========================================================================
+// Status badge
+// =========================================================================
+function setStatus(cls, text) {
+  const badge = document.getElementById('status-badge');
+  badge.className = cls;
+  badge.textContent = text;
+}
+
+// =========================================================================
+// Tree visualization (D3.js)
+// =========================================================================
+let svg, gLinks, gNodes, zoomBehavior, treeLayout;
+const margin = { top: 40, right: 40, bottom: 40, left: 80 };
+
+function initTreeSVG() {
+  const container = document.getElementById('tree-container');
+  svg = d3.select('#tree-svg');
+
+  zoomBehavior = d3.zoom()
+    .scaleExtent([0.1, 4])
+    .on('zoom', (e) => gRoot.attr('transform', e.transform));
+
+  svg.call(zoomBehavior);
+
+  const gRoot = svg.append('g').attr('class', 'tree-root');
+  gLinks = gRoot.append('g').attr('class', 'links');
+  gNodes = gRoot.append('g').attr('class', 'nodes');
+
+  treeLayout = d3.tree().nodeSize([20, 120]);
+
+  // Click anywhere outside tooltip/node to close tooltip
+  document.addEventListener('click', (e) => {
+    const tt = document.getElementById('node-tooltip');
+    if (!tt.contains(e.target)) hideTooltip();
+  });
+}
+
+function clearTree() {
+  gLinks.selectAll('*').remove();
+  gNodes.selectAll('*').remove();
+}
+
+const STATUS_COLORS = {
+  'created': '#8b8fa3',
+  'queued': '#5c9ee1',
+  'exploring': '#b07ce1',
+  'expanding': '#b07ce1',
+  'evaluated': '#e1c15c',
+  'completed': '#5ce19e',
+  'jailbreak': '#e15c5c',
+  'cut': '#555',
+};
+
+let globalNodesMap = new Map();  // accessible by showTooltip for path traversal
+
+function renderTree(data) {
+  if (!data || !data.nodes || data.nodes.length === 0) return;
+
+  // Build hierarchy from flat nodes
+  const nodesMap = new Map();
+  data.nodes.forEach(n => nodesMap.set(n.id, { ...n, children: [] }));
+  globalNodesMap = nodesMap;  // store globally
+
+  let rootNode = null;
+  nodesMap.forEach(n => {
+    if (n.id === data.root_id) {
+      rootNode = n;
+    } else if (n.parent_id !== null && nodesMap.has(n.parent_id)) {
+      nodesMap.get(n.parent_id).children.push(n);
+    }
+  });
+
+  if (!rootNode) return;
+
+  // Convert to d3 hierarchy
+  const root = d3.hierarchy(rootNode, d => d.children.length > 0 ? d.children : null);
+  treeLayout(root);
+
+  // Links
+  const links = root.links();
+  const linkSel = gLinks.selectAll('path.link').data(links, d => d.target.data.id);
+
+  linkSel.enter()
+    .append('path')
+    .merge(linkSel)
+    .attr('class', d => {
+      const meta = d.target.data.metadata || {};
+      return 'link' + (meta.is_jailbreak_path ? ' jailbreak-path' : '');
+    })
+    .attr('d', d3.linkHorizontal().x(d => d.y).y(d => d.x));
+
+  linkSel.exit().remove();
+
+  // Nodes
+  const nodeSel = gNodes.selectAll('g.node').data(root.descendants(), d => d.data.id);
+
+  const nodeEnter = nodeSel.enter()
+    .append('g')
+    .attr('class', 'node')
+    .on('click', (e, d) => { e.stopPropagation(); showTooltip(e, d.data); });
+
+  nodeEnter.append('circle').attr('r', 5);
+  nodeEnter.append('text').attr('dx', 8).attr('dy', 3);
+
+  const nodeUpdate = nodeEnter.merge(nodeSel);
+  nodeUpdate.attr('transform', d => `translate(${d.y},${d.x})`);
+  nodeUpdate.select('circle')
+    .attr('fill', d => {
+      const s = (d.data.status || '').toLowerCase();
+      return STATUS_COLORS[s] || '#666';
+    })
+    .attr('stroke', d => {
+      const meta = d.data.metadata || {};
+      return meta.is_jailbreak_hit ? '#e15c5c' : 'none';
+    })
+    .attr('stroke-width', d => {
+      const meta = d.data.metadata || {};
+      return meta.is_jailbreak_hit ? 3 : 0;
+    })
+    .attr('r', d => {
+      const score = d.data.score;
+      if (score === null || score === undefined || score < 0) return 4;
+      // Normalize: scores are raw*1000 (L3), so /1000 to get 1-10 range
+      const raw = Math.abs(score) >= 100 ? score / 1000 : score;
+      return Math.min(3 + raw * 0.7, 10);
+    });
+
+  nodeUpdate.select('text')
+    .text(d => {
+      const t = d.data.text || '';
+      return t.length > 20 ? t.slice(0, 20) + '...' : t;
+    });
+
+  nodeSel.exit().remove();
+
+  // Auto-fit on first render
+  if (!renderTree._fitted && root.descendants().length > 1) {
+    fitTree();
+    renderTree._fitted = true;
+  }
+
+  const isMcts = data.nodes.some(n => (n.metadata || {}).mcts_visits != null);
+  if (isMcts) {
+    renderMctsPanel(data);
+  } else {
+    renderQueuePanel(data);
+  }
+}
+
+// =========================================================================
+// Queue Panel
+// =========================================================================
+let queueCollapsed = false;
+
+function toggleQueuePanel() {
+  queueCollapsed = !queueCollapsed;
+  document.getElementById('queue-body').style.display = queueCollapsed ? 'none' : 'block';
+  document.getElementById('queue-toggle').innerHTML = queueCollapsed ? '&#9654;' : '&#9660;';
+}
+
+// =========================================================================
+// MCTS Panel — tree view of all nodes with visits / value / UCT
+// =========================================================================
+function renderMctsPanel(data) {
+  if (!data || !data.nodes) return;
+  const panel = document.getElementById('queue-panel');
+  const nodesWithMcts = data.nodes.filter(n => (n.metadata || {}).mcts_visits != null);
+  if (nodesWithMcts.length === 0) { panel.style.display = 'none'; return; }
+
+  panel.style.display = 'flex';
+  document.getElementById('queue-title').textContent = 'MCTS Tree';
+  document.getElementById('queue-count').textContent = nodesWithMcts.length;
+
+  // Build parent→children map
+  const byId = new Map();
+  data.nodes.forEach(n => byId.set(n.id, n));
+
+  const fmtS = v => v != null ? (Math.abs(v) >= 100 ? (v/1000).toFixed(2) : v.toFixed(2)) : '-';
+
+  function renderNode(n, depth) {
+    const meta = n.metadata || {};
+    const visits = meta.mcts_visits ?? 0;
+    const value = meta.mcts_value ?? 0;
+    const avgQ = visits > 0 ? (value / visits).toFixed(2) : '-';
+    const uct = meta.effective_score != null ? fmtS(meta.effective_score) : '-';
+    const sel = fmtS(n.selection_score);
+    const status = (n.status || '').toLowerCase();
+    const statusColor = STATUS_COLORS[status] || '#666';
+    const indent = '\u2003'.repeat(depth);
+    const text = (n.text || '').replace(/\n/g, ' ');
+    const preview = text.length > 30 ? text.slice(0, 30) + '\u2026' : text;
+
+    let html = `<tr data-node-id="${n.id}" onclick="focusNodeInTree(${n.id})">`;
+    html += `<td>${indent}<span style="color:${statusColor}">\u25CF</span> d${n.depth ?? '?'}</td>`;
+    html += `<td>${visits}</td>`;
+    html += `<td>${avgQ}</td>`;
+    html += `<td>${uct}</td>`;
+    html += `<td>${sel}</td>`;
+    html += `<td title="${escapeHtml(text)}">${escapeHtml(preview)}</td>`;
+    html += `</tr>`;
+
+    // Recurse into children sorted by UCT desc
+    const childIds = n.child_ids || [];
+    const children = childIds.map(id => byId.get(id)).filter(Boolean);
+    children.sort((a, b) => {
+      const ea = (a.metadata || {}).effective_score ?? -Infinity;
+      const eb = (b.metadata || {}).effective_score ?? -Infinity;
+      return eb - ea;
+    });
+    for (const c of children) {
+      html += renderNode(c, depth + 1);
+    }
+    return html;
+  }
+
+  const root = byId.get(data.root_id);
+  const tbody = document.getElementById('queue-tbody');
+  // Replace table header for MCTS
+  const thead = tbody.parentElement.querySelector('thead');
+  thead.innerHTML = '<tr><th>Node</th><th data-info="mcts_visits: backpropagation pass count">Visits</th><th data-info="mcts_value/visits: average reward">Avg Q</th><th data-info="UCT score: Q/N + C*sqrt(ln(N_parent)/N)">UCT</th><th data-info="Selection score from judger">Sel</th><th>Text</th></tr>';
+  tbody.innerHTML = root ? renderNode(root, 0) : '';
+}
+
+function renderQueuePanel(data) {
+  if (!data || !data.nodes) return;
+  const queued = data.nodes
+    .filter(n => (n.status || '').toLowerCase() === 'queued')
+    .sort((a, b) => {
+      const ea = (a.metadata || {}).effective_score ?? a.selection_score ?? a.score ?? 0;
+      const eb = (b.metadata || {}).effective_score ?? b.selection_score ?? b.score ?? 0;
+      return eb - ea;
+    });
+
+  const panel = document.getElementById('queue-panel');
+  if (queued.length === 0) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'flex';
+  document.getElementById('queue-title').textContent = 'Priority Queue';
+  document.getElementById('queue-count').textContent = queued.length;
+
+  // Restore default header
+  const thead = document.querySelector('#queue-tbody').parentElement.querySelector('thead');
+  thead.innerHTML = '<tr><th data-info="Priority rank (sorted by Eff descending)">#</th><th data-info="Node depth in tree">Depth</th><th data-info="Raw judger scores per sample">Scores</th><th data-info="mean(scores) — average of all judger sample scores">Mean</th><th data-info="(1-α)×mean + α×top2_mean — tail-aware selection score, α default 0.3">Sel</th><th data-info="Actual queue priority — depends on strategy">Eff</th><th data-info="Scoring factors applied to selection score">Factors</th><th data-info="Node text preview">Text</th></tr>';
+
+  const tbody = document.getElementById('queue-tbody');
+  let html = '';
+  for (let i = 0; i < queued.length; i++) {
+    const n = queued[i];
+    const meta = n.metadata || {};
+    const fmtS = v => v != null ? (Math.abs(v) >= 100 ? (v/1000).toFixed(2) : v.toFixed(2)) : '-';
+    const scores = (n.scores || []).map(s => fmtS(s)).join(', ');
+    const mean = fmtS(n.score);
+    const sel = fmtS(n.selection_score);
+    const eff = meta.effective_score != null ? fmtS(meta.effective_score) : sel;
+    const effStyle = meta.effective_score != null && n.selection_score != null && Math.abs(meta.effective_score - n.selection_score) > 0.01
+      ? ' style="color:var(--warning)"' : '';
+    // Score factors (strategy-dependent)
+    let factors = [];
+    if (meta.refusal_factor != null && meta.refusal_factor < 1.0)
+      factors.push('r:' + meta.refusal_factor.toFixed(2));
+    if (meta.transition_factor != null && meta.transition_factor > 1.0)
+      factors.push('t:' + meta.transition_factor.toFixed(1));
+    if (meta.depth_factor != null && meta.depth_factor !== 1.0)
+      factors.push('df:' + meta.depth_factor.toFixed(2));
+    const penaltyStr = factors.length > 0 ? factors.join(' ') : '-';
+    const hasNegativeFactor = factors.some(f => {
+      const v = parseFloat(f.split(':')[1]);
+      return v < 1.0;
+    });
+    const hasPositiveFactor = factors.some(f => {
+      const v = parseFloat(f.split(':')[1]);
+      return v > 1.0;
+    });
+    const penaltyStyle = hasNegativeFactor ? ' style="color:var(--danger)"'
+      : hasPositiveFactor ? ' style="color:var(--success, #5ce19e)"'
+      : '';
+    const text = (n.text || '').replace(/\n/g, ' ');
+    const preview = text.length > 40 ? text.slice(0, 40) + '\u2026' : text;
+    html += `<tr data-node-id="${n.id}" onclick="focusNodeInTree(${n.id})">`;
+    html += `<td>${i+1}</td><td>${n.depth ?? '-'}</td>`;
+    html += `<td style="color:var(--text2);font-size:10px">${scores || '-'}</td>`;
+    html += `<td>${mean}</td><td>${sel}</td><td${effStyle}>${eff}</td>`;
+    html += `<td${penaltyStyle}>${penaltyStr}</td>`;
+    html += `<td title="${escapeHtml(text)}">${escapeHtml(preview)}</td></tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+function focusNodeInTree(nodeId) {
+  // Highlight row in queue table
+  document.querySelectorAll('.queue-table tr.queue-active').forEach(r => r.classList.remove('queue-active'));
+  const row = document.querySelector(`.queue-table tr[data-node-id="${nodeId}"]`);
+  if (row) row.classList.add('queue-active');
+
+  // Find the D3 node group
+  const nodeGroup = gNodes.selectAll('g.node').filter(d => d.data.id === nodeId);
+  if (nodeGroup.empty()) return;
+
+  const d = nodeGroup.datum();
+  const x = d.y;  // d3.tree: x->y, y->x
+  const y = d.x;
+
+  // Zoom to the node
+  const container = document.getElementById('tree-container');
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+  const scale = 1.5;
+  const tx = w / 2 - x * scale;
+  const ty = h / 2 - y * scale;
+  svg.transition().duration(500)
+    .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+
+  // Add highlight ring
+  gNodes.selectAll('.queue-highlight').remove();
+  nodeGroup.append('circle')
+    .attr('class', 'queue-highlight')
+    .attr('r', 12)
+    .attr('fill', 'none')
+    .attr('stroke', 'var(--accent)')
+    .attr('stroke-width', 2.5)
+    .style('animation', 'queue-pulse 0.8s ease-in-out 3');
+
+  setTimeout(() => gNodes.selectAll('.queue-highlight').remove(), 2500);
+}
+
+function fitTree() {
+  const container = document.getElementById('tree-container');
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+  svg.call(zoomBehavior.transform, d3.zoomIdentity.translate(margin.left, h / 2).scale(0.8));
+}
+
+// =========================================================================
+// Tooltip
+// =========================================================================
+function getPathSequence(nodeData) {
+  // Walk parent_id chain, collect assistant-role texts
+  const parts = [];
+  let cur = nodeData;
+  while (cur) {
+    if (cur.role === 'assistant' && cur.text) {
+      parts.push(cur.text);
+    }
+    cur = cur.parent_id != null ? globalNodesMap.get(cur.parent_id) : null;
+  }
+  parts.reverse();
+  return parts.join('');
+}
+
+function fmtScore(raw) {
+  // Scores >=100 are L3/L4 (raw*1000); normalize to 1-10
+  if (Math.abs(raw) >= 100) return (raw / 1000).toFixed(1);
+  return raw.toFixed(1);
+}
+function scoreColor(raw) {
+  const v = Math.abs(raw) >= 100 ? raw / 1000 : raw;
+  if (v <= 4) return 'var(--success)';
+  if (v <= 6) return 'var(--warning)';
+  return 'var(--danger)';
+}
+
+function renderSamplesSection(nodeData) {
+  const scores = nodeData.scores || [];
+  const judgerResults = (nodeData.metadata || {}).judger_results || [];
+  if (scores.length === 0 && judgerResults.length === 0) return '';
+
+  const ts = Date.now();
+  let html = '';
+
+  // Judger results
+  if (judgerResults.length > 0) {
+    html += `<div class="tt-label">Samples (${judgerResults.length})</div><div class="tt-samples">`;
+    for (let i = 0; i < judgerResults.length; i++) {
+      const jr = judgerResults[i];
+      const text = jr.text || '';
+      const sid = `s${ts}-${i}`;
+      const hasText = text.length > 0;
+      const layer = jr.layer;
+      const score = jr.score;
+
+      html += '<div class="tt-sample-item">';
+      html += `<div class="tt-sample-header"${hasText ? ` onclick="toggleSampleText('${sid}')"` : ''}>`;
+      if (hasText) html += `<span class="tt-sample-toggle" id="${sid}-toggle">&#9654;</span>`;
+      html += `<span style="color:var(--text2)">#${i+1}</span>`;
+      html += `<span style="color:var(--text2)">L${layer || '?'}</span>`;
+
+      if (layer === 2) {
+        const refused = jr.is_safe === true;
+        html += `<span class="tt-sample-badge ${refused ? 'badge-safe' : 'badge-unsafe'}">${refused ? 'REFUSED' : 'NOT REFUSED'}</span>`;
+      } else if (score != null) {
+        html += `<span class="tt-sample-score" style="color:${scoreColor(score)}">${fmtScore(score)}</span>`;
+      }
+
+      if (hasText) {
+        const preview = text.length > 50 ? text.slice(0, 50) + '\u2026' : text;
+        html += `<span class="tt-sample-preview" style="color:var(--text2)">${escapeHtml(preview)}</span>`;
+      }
+      html += '</div>';
+      if (hasText) html += `<div class="tt-sample-text" id="${sid}">${escapeHtml(text)}</div>`;
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // Cached scores: cache scores are prepended (before judger results)
+  const cachedCount = Math.max(0, scores.length - judgerResults.length);
+  const extraScores = scores.slice(0, cachedCount);
+  if (extraScores.length > 0) {
+    html += `<div class="tt-label" style="margin-top:6px">Cached (${extraScores.length})</div><div class="tt-samples">`;
+    for (let i = 0; i < extraScores.length; i++) {
+      const score = Number(extraScores[i]);
+      html += '<div class="tt-sample-item"><div class="tt-sample-header">';
+      html += `<span style="color:var(--text2)">#${i + 1}</span>`;
+      html += `<span class="tt-sample-score" style="color:${scoreColor(score)}">${fmtScore(score)}</span>`;
+      html += '</div></div>';
+    }
+    html += '</div>';
+  }
+
+  return html;
+}
+
+function toggleSampleText(sid) {
+  const el = document.getElementById(sid);
+  const toggle = document.getElementById(sid + '-toggle');
+  if (!el) return;
+  el.classList.toggle('open');
+  if (toggle) toggle.classList.toggle('open');
+}
+
+function showTooltip(event, nodeData) {
+  const tt = document.getElementById('node-tooltip');
+  const meta = nodeData.metadata || {};
+  const pathSeq = getPathSequence(nodeData);
+  tt.innerHTML = `
+    <div class="tt-label">Status</div>
+    <div class="tt-value">${nodeData.status || 'N/A'}${meta.is_jailbreak_hit ? ' [JAILBREAK HIT]' : ''}</div>
+    <div class="tt-label">Role / Depth</div>
+    <div class="tt-value">${nodeData.role || 'N/A'} / ${nodeData.depth ?? 'N/A'}</div>
+    <div class="tt-label">Avg Score</div>
+    <div class="tt-value">${nodeData.score != null ? (Math.abs(nodeData.score) >= 100 ? (nodeData.score / 1000).toFixed(1) + '/10' : nodeData.score.toFixed(2)) : 'N/A'}${nodeData.scores && nodeData.scores.length > 0 ? ' (' + nodeData.scores.length + ' samples)' : ''}</div>
+    ${meta.mcts_visits != null ? `<div class="tt-label">Visits / Value / UCT</div>
+    <div class="tt-value">${meta.mcts_visits} / ${meta.mcts_value != null ? meta.mcts_value.toFixed(1) : 'N/A'} / ${meta.effective_score != null ? meta.effective_score.toFixed(2) : 'N/A'}</div>` : ''}
+    <div class="tt-label">Log Prob / Cum Log Prob</div>
+    <div class="tt-value">${fmtNum(nodeData.log_prob)} / ${fmtNum(nodeData.cum_log_prob)}</div>
+    ${meta.is_cut ? `<div class="tt-label">Cut Reason</div><div class="tt-value">${meta.cut_reason || 'N/A'}</div>` : ''}
+    ${renderSamplesSection(nodeData)}
+    <div class="tt-label">Node Text</div>
+    <div class="tt-text">${escapeHtml(nodeData.text || '(empty)')}</div>
+    ${pathSeq ? `<div class="tt-label">Full Path (Assistant)</div><div class="tt-text">${escapeHtml(pathSeq)}</div>` : ''}
+  `;
+  tt.style.display = 'block';
+  tt.style.left = Math.min(event.clientX + 10, window.innerWidth - 420) + 'px';
+  tt.style.top = Math.min(event.clientY + 10, window.innerHeight - 300) + 'px';
+}
+
+function hideTooltip() {
+  document.getElementById('node-tooltip').style.display = 'none';
+}
+
+function fmtNum(v) {
+  if (v === null || v === undefined) return 'N/A';
+  return typeof v === 'number' ? v.toFixed(4) : String(v);
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyText(btn) {
+  const text = btn.parentElement.querySelector('.rc-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+  });
+}
+
+// =========================================================================
+// Results
+// =========================================================================
+function showResults(result) {
+  const panel = document.getElementById('results-panel');
+  panel.style.display = 'block';
+
+  let html = '<h2>Results</h2>';
+
+  // Stats row
+  html += '<div class="stats-row">';
+  html += stat('Duration', result.duration != null ? result.duration.toFixed(1) + 's' : 'N/A');
+  html += stat('Nodes', result.evaluated_nodes_count ?? 'N/A');
+  html += stat('Max Depth', result.max_evaluated_depth ?? 'N/A');
+  html += stat('Exit Reason', result.exit_reason || 'N/A');
+  html += stat('Jailbreak', result.jailbreak_found ? 'YES' : 'NO');
+  html += '</div>';
+
+  // Unsafe path
+  if (result.jailbreak_found && result.unsafe_path) {
+    const up = result.unsafe_path;
+    const unsafeCumLogProb = up.cum_log_prob ?? up.log_probability;
+    html += `<div class="result-card unsafe">
+      <div class="rc-label">Unsafe Path</div>
+      <div class="rc-value">Cum Log Prob: ${fmtNum(unsafeCumLogProb)} | Prob: ${up.probability != null ? up.probability.toExponential(4) : 'N/A'} | Score: ${fmtNum(up.score)}</div>
+      <div class="rc-text-wrap"><button class="copy-btn" onclick="copyText(this)">Copy</button><div class="rc-text">${escapeHtml(up.text || '')}</div></div>
+    </div>`;
+  }
+
+  // Sample button
+  html += `<button class="btn btn-primary" id="sample-btn" onclick="sampleResponses()" style="width:auto;padding:8px 20px;margin-top:8px">
+    Sample Complete Responses
+  </button>`;
+  html += '<div id="sample-results"></div>';
+
+  panel.innerHTML = html;
+}
+
+async function sampleResponses() {
+  if (!currentRunId && !lastRunId) return;
+  const runId = currentRunId || lastRunId;
+  const btn = document.getElementById('sample-btn');
+  const container = document.getElementById('sample-results');
+  btn.disabled = true;
+  btn.textContent = 'Sampling...';
+  container.innerHTML = '<div style="color:var(--text2);padding:8px">Generating complete responses...</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/run/${runId}/sample`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ n: 5 }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      container.innerHTML = `<div style="color:var(--danger);padding:8px">Error: ${err.detail || 'Failed'}</div>`;
+      return;
+    }
+    const data = await res.json();
+    let html = '<div class="rc-label" style="margin:10px 0 6px">Sampled Responses</div>';
+    data.samples.forEach((s, i) => {
+      html += `<div class="result-card safe">
+        <div class="rc-value">#${i+1} | Cum Log Prob: ${fmtNum(s.cum_log_prob)} | Prob: ${s.probability != null ? s.probability.toExponential(4) : 'N/A'}</div>
+        <div class="rc-text-wrap"><button class="copy-btn" onclick="copyText(this)">Copy</button><div class="rc-text">${escapeHtml(s.text || '')}</div></div>
+      </div>`;
+    });
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = `<div style="color:var(--danger);padding:8px">Error: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sample Complete Responses';
+  }
+}
+
+function stat(label, value) {
+  return `<div class="stat-item"><div class="stat-label">${label}</div><div class="stat-value">${value}</div></div>`;
+}
+
+// =========================================================================
+// Resizable panels
+// =========================================================================
+function initResizers() {
+  const resizerV = document.getElementById('resizer-v');
+  const resizerH = document.getElementById('resizer-h');
+  const configPanel = document.querySelector('.config-panel');
+  const treeContainer = document.getElementById('tree-container');
+  const resultsPanel = document.getElementById('results-panel');
+  const rightPanel = document.querySelector('.right-panel');
+
+  let dragging = null;
+
+  resizerV.addEventListener('mousedown', e => {
+    e.preventDefault();
+    dragging = 'v';
+    resizerV.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  resizerH.addEventListener('mousedown', e => {
+    e.preventDefault();
+    dragging = 'h';
+    resizerH.classList.add('active');
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+
+    if (dragging === 'v') {
+      const newWidth = Math.max(200, Math.min(e.clientX, window.innerWidth - 300));
+      configPanel.style.width = newWidth + 'px';
+    } else if (dragging === 'h') {
+      const rpRect = rightPanel.getBoundingClientRect();
+      const offsetY = e.clientY - rpRect.top;
+      const minTree = 150;
+      const minResults = 100;
+      const treeH = Math.max(minTree, Math.min(offsetY, rpRect.height - minResults));
+      treeContainer.style.flex = 'none';
+      treeContainer.style.height = treeH + 'px';
+      resultsPanel.style.maxHeight = 'none';
+      resultsPanel.style.flex = '1';
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    if (dragging === 'v') resizerV.classList.remove('active');
+    if (dragging === 'h') resizerH.classList.remove('active');
+    dragging = null;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+}
+
+// =========================================================================
+// Boot
+// =========================================================================
+init();
+initResizers();
+</script>
+</body>
+</html>
