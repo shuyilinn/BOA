@@ -795,12 +795,24 @@ class Executor:
 
         pairs = list(zip([prompt_text] * len(response_texts), response_texts))
 
+        # Snapshot committed messages from the root node so the judger sees
+        # the full dialog trajectory (prior tool calls and results), not just
+        # the newly sampled assistant text.
+        from copy import deepcopy
+        root_committed = deepcopy(root.conversation_state.committed_messages) if root.conversation_state.committed_messages else []
+
         def _judge_chunk(chunk_pairs: List[Any]) -> List[Dict[str, Any]]:
             chunk_prompts = [p for p, _ in chunk_pairs]
             chunk_responses = [r for _, r in chunk_pairs]
             chunk_metadatas = [dict(self.prompt_metadata) for _ in chunk_pairs]
             for i, r in enumerate(chunk_responses):
                 chunk_metadatas[i]["_full_response"] = r
+                # For agent workloads, include full dialog history for the judger.
+                if root_committed and "output" not in chunk_metadatas[i]:
+                    output = list(root_committed)
+                    if r:
+                        output.append({"role": "assistant", "content": r})
+                    chunk_metadatas[i]["output"] = output
             return self.judger.batch_evaluate_attack_sampling(
                 prompts=chunk_prompts,
                 responses=chunk_responses,

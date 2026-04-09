@@ -98,6 +98,11 @@ class JudgeWorker:
             metadatas = [dict(task.judger_metadata or {}) for task in chunk_tasks]
             for i, task in enumerate(chunk_tasks):
                 metadatas[i]["_full_response"] = self._build_full_response(task)
+                # For agent workloads, populate "output" with the full dialog
+                # history so the judger sees the complete conversation trajectory,
+                # not just the latest assistant response.
+                if task.node_committed_messages and "output" not in metadatas[i]:
+                    metadatas[i]["output"] = self._build_dialog_output(task)
             responses = [self._build_full_response(task) for task in chunk_tasks]
             logger.info(
                 "Judging chunk: tasks=%s (runtime_batch_size=%s)",
@@ -170,6 +175,8 @@ class JudgeWorker:
             chunk_metadatas = [dict(task.judger_metadata or {}) for task in chunk_tasks]
             for i, task in enumerate(chunk_tasks):
                 chunk_metadatas[i]["_full_response"] = self._build_full_response(task)
+                if task.node_committed_messages and "output" not in chunk_metadatas[i]:
+                    chunk_metadatas[i]["output"] = self._build_dialog_output(task)
 
             # Step 1: Continue generating from the truncated sequence with tau protection
             seed_ids_batch = [task.seq_ids if task.seq_ids is not None else task.path_ids for task in chunk_tasks]
@@ -251,3 +258,18 @@ class JudgeWorker:
             "the canonical buffer population path."
         )
         return task.node_assistant_text + (task.seq_text or "")
+
+    @staticmethod
+    def _build_dialog_output(task: BufferItem) -> List[Dict[str, Any]]:
+        """Build the full dialog history for agent-workload judging.
+
+        Combines the node's committed conversation messages (frozen at enqueue
+        time) with the newly sampled assistant response.  This gives the judger
+        the complete trajectory — prior tool calls and their results — instead
+        of only the latest assistant text.
+        """
+        output = list(task.node_committed_messages)
+        new_text = (task.node_assistant_text or "") + (task.seq_text or "")
+        if new_text:
+            output.append({"role": "assistant", "content": new_text})
+        return output

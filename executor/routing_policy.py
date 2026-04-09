@@ -88,6 +88,7 @@ class RoutingPolicy:
                 "is_safe": result.get("is_safe"),
                 "score": result.get("score"),
                 "action": result.get("action"),
+                "raw_output": result.get("raw_output", ""),
                 "text": task.seq_text or "",
             })
             # Per-layer counter (int increment)

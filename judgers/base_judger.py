@@ -44,6 +44,7 @@ class AtomicJudgerResult:
             "layer3_score": float(self.layer3_score) if self.layer3_score is not None else None,
             "layer4_score": float(self.layer4_score) if self.layer4_score is not None else None,
             "action": self.action.value,
+            "raw_output": self.raw_output,
             "metadata": dict(self.metadata),
         }
 

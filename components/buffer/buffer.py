@@ -1,5 +1,6 @@
 from collections import deque
-from dataclasses import dataclass
+from copy import deepcopy
+from dataclasses import dataclass, field
 from typing import List, Optional, Any, Dict
 import threading
 from boa_types.tree_node import TreeNode
@@ -39,6 +40,9 @@ class BufferItem:
     # This is the immutable base for response reconstruction — JudgeWorker
     # concatenates this with seq_text instead of reading live node state.
     node_assistant_text: str = ""
+    # Snapshot of the node's committed conversation history at enqueue time.
+    # Used by agent workloads so the judger sees the full dialog, not just the last response.
+    node_committed_messages: List[Dict[str, Any]] = field(default_factory=list)
     seq_text: Optional[str] = None   # Filled by Sampler
     seq_ids: Optional[List[int]] = None
     seq_new_ids: Optional[List[int]] = None
@@ -79,6 +83,7 @@ class Buffer:
         # Snapshot assistant text now so judger reads a frozen value,
         # not live node state that could theoretically change later.
         assistant_text_snapshot = node.conversation_state.latest_assistant_text()
+        committed_snapshot = deepcopy(node.conversation_state.committed_messages)
         with self._lock:
             for _ in range(to_add):
                 item = BufferItem(
@@ -87,6 +92,7 @@ class Buffer:
                     path_ids=path_ids,
                     base_generated_len=base_generated_len,
                     node_assistant_text=assistant_text_snapshot,
+                    node_committed_messages=committed_snapshot,
                     judger_prompt=judger_prompt,
                     judger_metadata=dict(judger_metadata or {}),
                     original_prompt=original_prompt,
