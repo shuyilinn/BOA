@@ -263,6 +263,9 @@ class Reporter:
         block.append(f"Layer3 score: {layer3_score}")
         block.append(f"Layer4 score: {layer4_score}")
         block.append(f"Safe: {safe_str}")
+        unsafe_reason = stats.get("unsafe_reason")
+        if unsafe_reason:
+            block.append(f"Unsafe reason: {unsafe_reason}")
         block.append(f"Exit reason: {exit_reason}")
         block.append(f"Log probability (full seq): {log_prob_str}")
         tree_path_lp = stats.get("tree_path_log_probability")

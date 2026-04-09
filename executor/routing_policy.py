@@ -49,6 +49,7 @@ class RoutingPolicy:
         return make_success_payload_fn(
             node=node,
             unsafe_result=result["response"],
+            unsafe_reason=result.get("raw_output", ""),
             response_score=float(result.get("score", 0.0)),
             layer3_score=result.get("layer3_score"),
             layer4_score=result.get("layer4_score"),
@@ -80,17 +81,6 @@ class RoutingPolicy:
         for task, result in zip(tasks, results):
             node = task.node
             node.add_score(float(result["score"]))
-            # ~32 bytes per judgment: tiny snapshot for offline analysis
-            if "judger_results" not in node.metadata:
-                node.metadata["judger_results"] = []
-            node.metadata["judger_results"].append({
-                "layer": result.get("layer"),
-                "is_safe": result.get("is_safe"),
-                "score": result.get("score"),
-                "action": result.get("action"),
-                "raw_output": result.get("raw_output", ""),
-                "text": task.seq_text or "",
-            })
             # Per-layer counter (int increment)
             layer_key = str(result.get("layer", -1))
             entry = self.judgment_summary.setdefault(layer_key, {"safe": 0, "unsafe": 0, "total": 0})

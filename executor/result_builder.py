@@ -104,6 +104,7 @@ def build_final_stats(
     stats: Dict[str, Any],
     node: Optional[Any],
     unsafe_result: Optional[str],
+    unsafe_reason: str = "",
     response_score: Optional[float],
     layer3_score: Optional[float],
     layer4_score: Optional[float],
@@ -158,6 +159,8 @@ def build_final_stats(
             stats["final_output"] = "[ERROR] Missing unsafe_result for success node."
         else:
             stats["final_output"] = unsafe_result
+        if unsafe_reason:
+            stats["unsafe_reason"] = unsafe_reason
 
         # Report-time enrichment (unsafe case: target is the winning node)
         _enrich_report_time_stats(stats, target_node=node, root_node=root_node)

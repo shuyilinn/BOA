@@ -154,9 +154,6 @@ class JudgeWorker:
         Called only for truncated tasks (is_complete=False) that scored high in layer-3.
         Returns (results, generated_tokens_in_expand).
         """
-        temperature = self.config.temperature
-        top_p = self.config.top_p
-        top_k = self.config.top_k
         # Extra tokens to generate: full budget minus what was already sampled
         extra_new_tokens = int(self.config.sample_full_new_tokens) - int(self.config.sample_new_tokens)
         initial_expand_bs = int(self._oom_runner.batch_size)
