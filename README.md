@@ -122,12 +122,18 @@ pip install vllm
 pip install datasets 
 pip install openai 
 pip install transformers
+pip installl autoawq
 ```
 
-Optional:
+Additionally needed:
 
 - HuggingFace access for model download
-- OpenAI API key for optional API-based judger
+- OpenAI API key for API-based judger
+
+```bash
+huggingface-cli login
+export OPENAI_API_KEY=<your_openai_api_key>
+```
 
 ## 4 Running Experiments
 
@@ -141,6 +147,12 @@ Run lightweight single-task real-model check:
 
 ```bash
 python experiment/run_light_model.py
+```
+
+Run full experiment with 3-layer judger only (no OpenAI API key required):
+
+```bash
+python experiment/run_mlsys_ae_only3judger.py
 ```
 
 Run mock pipeline check:
