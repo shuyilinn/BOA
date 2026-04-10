@@ -107,7 +107,7 @@ results/<run_id>/
 
 - Minimum (mock, CPU-only): `python experiment/run_demo.py`
 - Lightweight (single GPU): `python experiment/run_light_model.py`
-- Full reproduction (paper-scale): `python experiment/run_model.py`
+- Full reproduction (paper-scale): `python experiment/run_mlsys_ae.py`
 
 ## 3 Requirements
 
@@ -131,10 +131,10 @@ Optional:
 
 ## 4 Running Experiments
 
-Run the full experiment entry point. To add more experiment sweeps, add `SweepConfig` entries to `MODEL_CONFIGS` in `experiment/run_model.py`.
+Run the full experiment entry point. To add more experiment sweeps, add task entries to `TASKS` in `experiment/run_mlsys_ae.py`.
 
 ```bash
-python experiment/run_model.py
+python experiment/run_mlsys_ae.py
 ```
 
 Run lightweight single-task real-model check:
@@ -221,7 +221,7 @@ python benchmark/generate_benchmark.py
 Primary configuration files:
 
 - `config.py`
-- `experiment/run_model.py`
+- `experiment/run_mlsys_ae.py`
 - `experiment/run_light_model.py`
 - `experiment/run_demo.py`
 
