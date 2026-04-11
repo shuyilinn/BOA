@@ -56,6 +56,7 @@ def build_probability_threshold_baseline(
                 engine,
                 prompt_len=prompt_len,
                 max_new_tokens=int(gen_length),
+                framework=str(config.target_engine_name),
                 config_batch_size=batch_size,
                 use_dynamic=True,
                 gpu_memory_utilization=util,

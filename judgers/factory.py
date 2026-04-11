@@ -39,6 +39,25 @@ def _build_layered_single_turn_judger(
     )
 
 
+def _build_layered_single_turn_3_layers_judger(
+    local_judger_engine: Any,
+    api_judger_engine: Any,
+    config: Any,
+) -> TreeGuideJudger:
+    layer1_judger = RefusalPatternJudger(config) if bool(getattr(config, "enable_refuse_pattern_matching", True)) else None
+    layer2_judger = RefusalJudger(local_judger_engine) if bool(getattr(config, "enable_refuse_judger", True)) else None
+    layer3_judger = BoaJudger(local_judger_engine, filter_threshold=float(config.layer3_filter_threshold))
+    return TreeGuideJudger(
+        local_judger_engine=local_judger_engine,
+        api_judger_engine=None,
+        config=config,
+        layer1_judger=layer1_judger,
+        layer2_judger=layer2_judger,
+        layer3_judger=layer3_judger,
+        layer4_judger=None,
+    )
+
+
 def _build_agent_judger(
     local_judger_engine: Any,
     api_judger_engine: Any,
@@ -59,6 +78,7 @@ def _build_agent_judger(
 
 _JUDGER_REGISTRY: Dict[JudgerKey, JudgerBuilder] = {
     ("single_turn", "layered_single_turn"): _build_layered_single_turn_judger,
+    ("single_turn_3_layers", "layered_single_turn"): _build_layered_single_turn_3_layers_judger,
     ("agent", "agent_safety"): _build_agent_judger,
 }
 

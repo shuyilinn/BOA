@@ -34,10 +34,16 @@ git clone https://github.com/shuyilinn/BOA.git
 cd BOA
 ```
 
-Step 2: Install dependencies.
+Step 2: Create environment and install dependencies.
 
 ```bash
-pip install -r requirements.txt
+conda create -n boa python==3.11 -y
+conda activate boa
+pip install vllm 
+pip install datasets 
+pip install openai 
+pip install transformers
+pip installl autoawq
 ```
 
 Step 3: Run the minimum mock test (pipeline sanity check without loading an LLM).
@@ -53,12 +59,15 @@ MINIMUM REPRODUCIBILITY TEST: PASSED
 Status: minimum test passed
 ```
 
-Step 4: (Optional) Log in to HuggingFace.
-This is only needed when running open-source models that require gated/download access.
+Step 4: Log in to HuggingFace and OpenAI.
 
 ```bash
 huggingface-cli login
+export OPENAI_API_KEY=<your_openai_api_key>
 ```
+
+- **HuggingFace**: Target models are hosted on HuggingFace and some require gated access approval before download.
+- **OpenAI API key**: Used for the Layer 4 (API-based) judger. If unavailable, you must use Layer 3 as the terminal judger, which will result in lower accuracy.
 
 Step 5: Launch a lightweight BOA run with a real model.
 
@@ -103,8 +112,17 @@ results/<run_id>/
 ## 3 Requirements
 
 - Linux
-- Python >= 3.9
-- Dependencies in `requirements.txt`
+- Conda
+- Python 3.11
+
+```bash
+conda create -n boa python==3.11 -y
+conda activate boa
+pip install vllm 
+pip install datasets 
+pip install openai 
+pip install transformers
+```
 
 Optional:
 
@@ -214,7 +232,7 @@ Typical knobs:
 - workload-specific options under `workload_configs` (for example `benchmark_path`, `judger_profile`, `clean_response`)
 - prompt range (`harmful_prompt_start/end`)
 - search/sampling parameters (`top_p`, `top_k`, `temperature`, `chunk_size`, `chunk_width`)
-- runtime budget (`time_limit_sec`)
+- runtime budget (`time_limit_sec`): The per-prompt search time limit. Our default setup uses `time_limit_sec=600` (10 minutes). Note that actual wall-clock time per prompt may reach ~800 seconds because BOA performs a final buffer flush after the time limit expires, which can take up to an additional 200 seconds.
 
 `workload_configs[workload_name]["clean_response"]` controls whether `TreeGuideJudger` strips fictional multi-turn continuation markers such as `Human:` or `Assistant:` before judging. The default configuration keeps this enabled for `single_turn` and `multi_turn`, and disables it for `agent`.
 

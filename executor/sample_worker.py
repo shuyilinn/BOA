@@ -40,6 +40,7 @@ class SampleWorker:
                 self.sampler.engine,
                 prompt_len=int(self.sampler.config.sampler_estimate_prompt_len),
                 max_new_tokens=int(self.sampler.config.sample_new_tokens),
+                framework=str(self.sampler.config.target_engine_name),
                 config_batch_size=int(self.sampler.config.sampler_batch_size),
                 use_dynamic=True,
                 gpu_memory_utilization=float(self.sampler.config.target_gpu_memory_utilization),

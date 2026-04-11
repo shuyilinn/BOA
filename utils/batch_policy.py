@@ -52,6 +52,7 @@ def get_initial_batch_size(
     prompt_len: int,
     max_new_tokens: int,
     *,
+    framework: str = "hf",
     config_batch_size: int,
     use_dynamic: bool,
     gpu_memory_utilization: float,
@@ -63,12 +64,12 @@ def get_initial_batch_size(
 ) -> int:
     """
     Resolve initial batch size:
-    - static mode: use config batch size
-    - dynamic mode: use estimated batch size
+    - static mode or non-HF framework: use config batch size
+    - dynamic mode (HF only): use estimated batch size
     """
     config_bs = int(config_batch_size)
     min_bs = int(min_batch_size)
-    if not bool(use_dynamic):
+    if not bool(use_dynamic) or framework != "hf":
         logger.info("%s batch size (config): %s", policy_name, config_bs)
         return config_bs
 

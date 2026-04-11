@@ -49,6 +49,15 @@ class Config:
                 "judger_profile": "layered_single_turn",
                 "judger_model": "unsloth/Qwen2.5-3B-Instruct",
             },
+            "single_turn_3_layers": {
+                "benchmark_path": "./benchmark/boa_benchmark/jailbreak_oracle_benchmark.json",
+                "environment_type": "single_turn",
+                "clean_response": False,
+                "terminal_unsafe_enabled": True,
+                "terminal_unsafe_layers": [3],
+                "judger_profile": "layered_single_turn",
+                "judger_model": "unsloth/Qwen2.5-3B-Instruct",
+            },
             "agent": {
                 "benchmark_path": "/home/shuyi/BOA/benchmark/agentsafetybench/llama3.1-8b_greedy_safe_subset.json",
                 "environment_type": "agent_safetybench",

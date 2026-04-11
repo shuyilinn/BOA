@@ -50,6 +50,7 @@ class TreeGuideJudger:
             self.local_judger_engine,
             prompt_len=int(self.config.judger_estimate_prompt_len),
             max_new_tokens=int(self.config.judger_estimate_max_new_tokens),
+            framework=str(self.config.judger_engine_name),
             config_batch_size=int(self.config.judger_batch_size),
             use_dynamic=bool(self.config.use_dynamic_batch_size),
             gpu_memory_utilization=float(self.config.judger_gpu_memory_utilization),
