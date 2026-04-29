@@ -1,9 +1,27 @@
-# BOA Artifact
-This repository contains the artifact for the MLSys 2026 paper:
+<h1 align="center">BOA Artifact</h1>
 
-**Toward Principled LLM Safety Testing: Solving the Jailbreak Oracle Problem**
+<p align="center">
+  <em>Toward Principled LLM Safety Testing: Solving the Jailbreak Oracle Problem</em><br>
+  <sub>MLSys 2026</sub>
+</p>
 
-It includes the BOA implementation, benchmark assets, and runnable scripts for minimum, lightweight, and full experiment workflows.
+<p align="center">
+  <a href="badges/artifacts-available-v1.1.pdf"><img src="badges/artifacts-available-v1.1.png" alt="Artifacts Available v1.1" height="110"></a>
+  &nbsp;
+  <a href="badges/artifacts-functional-v1.1.pdf"><img src="badges/artifacts-functional-v1.1.png" alt="Artifacts Functional v1.1" height="110"></a>
+  &nbsp;
+  <a href="badges/results-reproduced-v1.1.pdf"><img src="badges/results-reproduced-v1.1.png" alt="Results Reproduced v1.1" height="110"></a>
+</p>
+
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.11-blue.svg" alt="Python 3.11"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"></a>
+  <a href="https://mlsys.org/"><img src="https://img.shields.io/badge/MLSys-2026-purple.svg" alt="MLSys 2026"></a>
+</p>
+
+---
+
+This repository contains the artifact for the **MLSys 2026** paper *Toward Principled LLM Safety Testing: Solving the Jailbreak Oracle Problem*. It includes the BOA implementation, benchmark assets, and runnable scripts for minimum, lightweight, and full experiment workflows.
 
 ## Table of Contents
 
